@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="page-title">Post - promise</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-left">
+      <a href="/" class="site-title">promise</a>
+      <img class="site-subtitle" src="/img/subtitle.svg" alt="Shall I compare thee to a summer's day?" onclick="openSearch()">
+    </div>
+    <nav class="nav">
+      <div class="nav-right">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+        <a href="/link">Link</a>
+        <a href="/admin">Admin</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="main">
+    <!-- Password form -->
+    <div id="password-form" class="password-form" style="display:none;">
+      <h3>🔒 This content is password protected</h3>
+      <p style="font-size:13px;color:#666;margin-bottom:16px;">Please enter the password to access this post</p>
+      <input type="hidden" id="password-slug" value="">
+      <input type="password" id="password-input" placeholder="Enter password...">
+      <div id="password-error" style="color:#c00;font-size:13px;margin-bottom:8px;display:none;"></div>
+      <button class="btn" onclick="verifyPassword()">Unlock</button>
+    </div>
+
+    <!-- Post body -->
+    <article id="post-body" class="post-detail" style="display:none;">
+      <h1 id="post-title" class="post-title"></h1>
+      <div id="post-meta" class="post-meta"></div>
+      <div id="post-content" class="post-content"></div>
+    </article>
+
+    <!-- Comments -->
+    <section id="post-comments" class="comments-section" style="display:none;">
+      <h2 id="comments-title" class="comments-title">No comments yet</h2>
+      <div id="comments-list"></div>
+
+      <div class="comment-form">
+        <h3>Leave a Comment</h3>
+        <div class="form-group">
+          <label>Nickname *</label>
+          <input type="text" id="comment-author" placeholder="Your nickname">
+        </div>
+        <div class="form-group">
+          <label>Email *</label>
+          <input type="email" id="comment-email" placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+          <label>Website (optional)</label>
+          <input type="text" id="comment-url" placeholder="http://">
+        </div>
+        <div class="form-group">
+          <label>Comment *</label>
+          <textarea id="comment-content" placeholder="Say something..."></textarea>
+        </div>
+        <button class="btn" id="submit-comment-btn">Submit</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-links">
+      <a href="/rss.xml" target="_blank">Posts RSS</a>
+      <a href="/archive">Archive</a>
+    </div>
+    <div>© promise</div>
+  </footer>
+
+  <div id="back-to-top" class="back-to-top" title="Back to top"></div>
+  <script src="/js/nav.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/search.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const slug = window.location.pathname.replace('/post/', '');
+      loadPost(slug);
+
+      document.getElementById('submit-comment-btn').addEventListener('click', () => {
+        const author = document.getElementById('comment-author').value.trim();
+        const email = document.getElementById('comment-email').value.trim();
+        const content = document.getElementById('comment-content').value.trim();
+
+        if (!author || !email || !content) {
+          alert('Please fill in nickname, email and comment content');
+          return;
+        }
+
+        fetch('/api/posts/' + slug).then(r => r.json()).then(postData => {
+          fetch('/api/comments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              post_id: postData.id,
+              author,
+              email,
+              url: document.getElementById('comment-url')?.value || '',
+              content
+            })
+          }).then(r => r.json()).then(() => {
+            document.getElementById('comment-content').value = '';
+            loadPost(slug);
+          });
+        });
+      });
+    });
+  </script>
+</body>
+</html>

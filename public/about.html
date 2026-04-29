@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About - promise</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-left">
+      <a href="/" class="site-title">promise</a>
+      <img class="site-subtitle" src="/img/subtitle.svg" alt="Shall I compare thee to a summer's day?" onclick="openSearch()">
+    </div>
+    <nav class="nav">
+      <div class="nav-right">
+        <a href="/">Home</a>
+        <a href="/about" class="active">About</a>
+        <a href="/link">Link</a>
+        <a href="/admin">Admin</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="main">
+    <div class="page-content" id="page-content">
+      <h1>About</h1>
+      <div id="about-body">
+        <p style="color:#999;text-align:center;padding:40px 0;">Loading...</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-links">
+      <a href="/rss.xml" target="_blank">Posts RSS</a>
+      <a href="/archive">Archive</a>
+    </div>
+    <div>© promise</div>
+  </footer>
+
+  <div id="back-to-top" class="back-to-top" title="Back to top"></div>
+  <script src="/js/nav.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/search.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      fetch('/api/about').then(r => r.json()).then(data => {
+        document.getElementById('page-title') && (document.getElementById('page-title').textContent = 'About - promise');
+        document.title = 'About - promise';
+        document.getElementById('about-body').innerHTML = data.content_html || '<p>' + escapeHtml(data.content) + '</p>';
+      });
+    });
+  </script>
+</body>
+</html>

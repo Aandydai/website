@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - promise</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/nav.js"></script>
+  <style>
+    .dashboard-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .dashboard-nav .tab-btn {
+      padding: 8px 20px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      font-family: var(--font);
+      transition: all 0.2s;
+    }
+    .dashboard-nav .tab-btn:hover,
+    .dashboard-nav .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .panel-header h3 { font-size: 18px; }
+    .action-bar {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-sm {
+      padding: 4px 12px;
+      font-size: 13px;
+    }
+    .btn-danger { background: #c00; color: #fff; }
+    .btn-danger:hover { background: #a00; }
+    .btn-success { background: #28a745; color: #fff; }
+    .btn-success:hover { background: #218838; }
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+      background: #eee;
+      color: #666;
+    }
+    .modal-form .form-group { margin-bottom: 12px; }
+    .modal-form label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; }
+    .modal-form input,
+    .modal-form textarea,
+    .modal-form select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: var(--font);
+    }
+    .modal-form textarea { min-height: 120px; resize: vertical; }
+    .upload-toolbar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .upload-btn {
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #f9f9f9;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: var(--font);
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .upload-btn:hover {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #333;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      z-index: 200;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <h2>Dashboard</h2>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <a href="/" class="btn btn-secondary btn-sm">&larr; View Site</a>
+        <button class="btn btn-secondary btn-sm" onclick="handleLogout()">Logout</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number" id="stat-posts">-</div>
+        <div class="stat-label">Posts</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-comments">-</div>
+        <div class="stat-label">Comments</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-links">-</div>
+        <div class="stat-label">Links</div>
+      </div>
+    </div>
+
+    <!-- Recent Comments -->
+    <div style="margin-bottom:32px;">
+      <h3 style="margin-bottom:12px;">Recent Comments</h3>
+      <div id="recent-comments"></div>
+    </div>
+
+    <!-- Navigation tabs -->
+    <div class="dashboard-nav">
+      <button class="tab-btn active" onclick="switchTab('posts')">Posts</button>
+      <button class="tab-btn" onclick="switchTab('links')">Links</button>
+      <button class="tab-btn" onclick="switchTab('comments')">Comments</button>
+      <button class="tab-btn" onclick="switchTab('categories')">Categories</button>
+      <button class="tab-btn" onclick="switchTab('password')">Password</button>
+    </div>
+
+    <!-- Posts -->
+    <div id="tab-posts" class="tab-panel active">
+      <div class="panel-header">
+        <h3>Posts</h3>
+        <div class="action-bar">
+          <button class="btn btn-success btn-sm" onclick="openPostModal()">+ New Post</button>
+        </div>
+      </div>
+      <table class="data-table" id="posts-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Slug</th>
+            <th>Category</th>
+            <th>Comments</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="posts-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Links -->
+    <div id="tab-links" class="tab-panel">
+      <div class="panel-header">
+        <h3>Links</h3>
+        <div class="action-bar">
+          <button class="btn btn-success btn-sm" onclick="openLinkModal()">+ Add Link</button>
+        </div>
+      </div>
+      <table class="data-table" id="links-table">
+        <thead>
+          <tr><th>ID</th><th>Name</th><th>URL</th><th>Description</th><th>Sort</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="links-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Comments -->
+    <div id="tab-comments" class="tab-panel">
+      <div class="panel-header">
+        <h3>Comments</h3>
+      </div>
+      <table class="data-table" id="comments-table">
+        <thead>
+          <tr><th>ID</th><th>Author</th><th>Post</th><th>Content</th><th>Date</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="comments-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Categories -->
+    <div id="tab-categories" class="tab-panel">
+      <div class="panel-header">
+        <h3>Categories</h3>
+        <div class="action-bar">
+          <button class="btn btn-success btn-sm" onclick="openCategoryModal()">+ Add Category</button>
+        </div>
+      </div>
+      <table class="data-table" id="categories-table">
+        <thead>
+          <tr><th>ID</th><th>Name</th><th>Slug</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="categories-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Change Password -->
+    <div id="tab-password" class="tab-panel">
+      <div class="panel-header">
+        <h3>Change Admin Password</h3>
+      </div>
+      <div style="max-width:400px;">
+        <div class="form-group">
+          <label>Current Password</label>
+          <input type="password" id="old-password" placeholder="Current password">
+        </div>
+        <div class="form-group">
+          <label>New Password</label>
+          <input type="password" id="new-password" placeholder="New password">
+        </div>
+        <div class="form-group">
+          <label>Confirm New Password</label>
+          <input type="password" id="confirm-password" placeholder="Confirm new password">
+        </div>
+        <button class="btn" onclick="changePassword()">Change Password</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal-overlay" class="modal-overlay" style="display:none;">
+    <div class="modal" id="modal-box">
+      <h3 id="modal-title">Title</h3>
+      <div id="modal-content"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn" id="modal-confirm-btn" onclick="modalConfirm()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // ========== Globals ==========
+    let currentTab = 'posts';
+    let modalAction = null;
+    let editingPostId = null;
+    let editingLinkId = null;
+    let editingCategoryId = null;
+
+    // ========== Init ==========
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDashboardData();
+    });
+
+    // ========== Load Data ==========
+    async function loadDashboardData() {
+      const statsRes = await fetch('/api/admin/stats');
+      const stats = await statsRes.json();
+      document.getElementById('stat-posts').textContent = stats.postCount;
+      document.getElementById('stat-comments').textContent = stats.commentCount;
+      document.getElementById('stat-links').textContent = stats.friendCount;
+
+      const rcEl = document.getElementById('recent-comments');
+      if (stats.recentComments.length === 0) {
+        rcEl.innerHTML = '<p style="color:#999;">No comments yet.</p>';
+      } else {
+        rcEl.innerHTML = '';
+        stats.recentComments.forEach(c => {
+          const div = document.createElement('div');
+          div.className = 'comment-item';
+          div.innerHTML = '<div class="comment-meta"><strong>' + escapeHtml(c.author) + '</strong> commented on <a href="/post/' + c.post_slug + '" target="_blank">' + escapeHtml(c.post_title) + '</a> &middot; ' + c.created_at + '</div><div class="comment-content">' + escapeHtml(c.content) + '</div>';
+          rcEl.appendChild(div);
+        });
+      }
+
+      loadPostsTable();
+      loadLinksTable();
+      loadCommentsTable();
+      loadCategoriesTable();
+    }
+
+    async function loadPostsTable() {
+      const res = await fetch('/api/admin/posts');
+      const posts = await res.json();
+      const tbody = document.getElementById('posts-tbody');
+      tbody.innerHTML = '';
+      posts.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + p.id + '</td><td>' + escapeHtml(p.title) + '</td><td>' + escapeHtml(p.slug) + '</td><td>' + escapeHtml(p.category) + '</td><td>' + p.comment_count + '</td><td>' + p.created_at + '</td><td><button class="btn btn-secondary btn-sm" onclick="openPostModal(' + p.id + ')">Edit</button> <button class="btn btn-danger btn-sm" onclick="deletePost(' + p.id + ')">Delete</button></td>';
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function loadLinksTable() {
+      const res = await fetch('/api/admin/friends');
+      const data = await res.json();
+      const links = data.friends || [];
+      const tbody = document.getElementById('links-tbody');
+      tbody.innerHTML = '';
+      links.forEach(l => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + l.id + '</td><td>' + escapeHtml(l.name) + '</td><td><a href="' + l.url + '" target="_blank">' + escapeHtml(l.url) + '</a></td><td>' + escapeHtml(l.description || '') + '</td><td>' + l.sort_order + '</td><td><button class="btn btn-secondary btn-sm" onclick="openLinkModal(' + l.id + ')">Edit</button> <button class="btn btn-danger btn-sm" onclick="deleteLink(' + l.id + ')">Delete</button></td>';
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function loadCommentsTable() {
+      const res = await fetch('/api/admin/comments');
+      const comments = await res.json();
+      const tbody = document.getElementById('comments-tbody');
+      tbody.innerHTML = '';
+      comments.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + c.id + '</td><td>' + escapeHtml(c.author) + '<br><small style="color:#999;">' + escapeHtml(c.email) + '</small></td><td><a href="/post/' + c.post_slug + '" target="_blank">' + escapeHtml(c.post_title) + '</a></td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(c.content) + '</td><td>' + c.created_at + '</td><td><button class="btn btn-danger btn-sm" onclick="deleteComment(' + c.id + ')">Delete</button></td>';
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function loadCategoriesTable() {
+      const res = await fetch('/api/admin/categories');
+      const cats = await res.json();
+      const tbody = document.getElementById('categories-tbody');
+      tbody.innerHTML = '';
+      cats.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + c.id + '</td><td>' + escapeHtml(c.name) + '</td><td>' + escapeHtml(c.slug) + '</td><td><button class="btn btn-danger btn-sm" onclick="deleteCategory(' + c.id + ')">Delete</button></td>';
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ========== Tab Switch ==========
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelector('.tab-btn[onclick*="' + tab + '"]')?.classList.add('active');
+      document.getElementById('tab-' + tab)?.classList.add('active');
+      // Refresh data when switching tabs
+      if (tab === 'posts') loadPostsTable();
+      if (tab === 'links') loadLinksTable();
+      if (tab === 'comments') loadCommentsTable();
+      if (tab === 'categories') loadCategoriesTable();
+    }
+
+    // ========== Post Modal ==========
+    async function openPostModal(id) {
+      editingPostId = id;
+      let post = { title: '', slug: '', content: '', category: 'daily', password: '' };
+
+      if (id) {
+        const posts = await fetch('/api/admin/posts').then(r => r.json());
+        post = posts.find(p => p.id === id) || post;
+        document.getElementById('modal-title').textContent = 'Edit Post';
+      } else {
+        document.getElementById('modal-title').textContent = 'New Post';
+      }
+
+      document.getElementById('modal-content').innerHTML = `
+        <div class="modal-form">
+          <div class="form-group"><label>Title *</label><input type="text" id="mp-title" value="${escapeHtml(post.title)}"></div>
+          <div class="form-group"><label>Slug * (URL identifier, e.g.: 20260417-001)</label><input type="text" id="mp-slug" value="${escapeHtml(post.slug)}" placeholder="letters/numbers/hyphens"></div>
+          <div class="form-group"><label>Category</label><input type="text" id="mp-category" value="${escapeHtml(post.category)}"></div>
+          <div class="form-group"><label>Password (leave empty for no protection)</label><input type="text" id="mp-password" value="${escapeHtml(post.password || '')}" placeholder="set a password"></div>
+          <div class="form-group">
+            <label>Attachments</label>
+            <div class="upload-toolbar">
+              <button type="button" class="upload-btn" onclick="triggerUpload('image')" title="Image">🖼 Image</button>
+              <button type="button" class="upload-btn" onclick="triggerUpload('audio')" title="Audio">🎵 Audio</button>
+              <button type="button" class="upload-btn" onclick="triggerUpload('video')" title="Video">🎬 Video</button>
+              <button type="button" class="upload-btn" onclick="triggerUpload('file')" title="File">📎 File</button>
+            </div>
+            <div id="upload-progress" style="font-size:12px;color:#888;margin-top:4px;display:none;"></div>
+          </div>
+          <div class="form-group"><label>Content * (Markdown format)</label><textarea id="mp-content">${escapeHtml(post.content)}</textarea></div>
+        </div>
+      `;
+
+      modalAction = 'post';
+      openModal();
+    }
+
+    // ========== Link Modal ==========
+    async function openLinkModal(id) {
+      editingLinkId = id;
+      let friend = { name: '', url: '', description: '', sort_order: 0 };
+
+      if (id) {
+        const friends = await fetch('/api/admin/friends').then(r => r.json());
+        friend = friends.find(f => f.id === id) || friend;
+        document.getElementById('modal-title').textContent = 'Edit Link';
+      } else {
+        document.getElementById('modal-title').textContent = 'Add Link';
+      }
+
+      document.getElementById('modal-content').innerHTML = `
+        <div class="modal-form">
+          <div class="form-group"><label>Name *</label><input type="text" id="mf-name" value="${escapeHtml(friend.name)}"></div>
+          <div class="form-group"><label>URL *</label><input type="text" id="mf-url" value="${escapeHtml(friend.url)}" placeholder="https://"></div>
+          <div class="form-group"><label>Description</label><input type="text" id="mf-description" value="${escapeHtml(friend.description || '')}"></div>
+          <div class="form-group"><label>Sort Order</label><input type="number" id="mf-sort" value="${friend.sort_order}"></div>
+        </div>
+      `;
+
+      modalAction = 'link';
+      openModal();
+    }
+
+    // ========== Category Modal ==========
+    function openCategoryModal() {
+      editingCategoryId = null;
+      document.getElementById('modal-title').textContent = 'Add Category';
+      document.getElementById('modal-content').innerHTML = `
+        <div class="modal-form">
+          <div class="form-group"><label>Name *</label><input type="text" id="mc-name" placeholder="e.g.: Daily"></div>
+          <div class="form-group"><label>Slug * (English identifier)</label><input type="text" id="mc-slug" placeholder="e.g.: daily"></div>
+        </div>
+      `;
+      modalAction = 'category';
+      openModal();
+    }
+
+    // ========== Modal Actions ==========
+    function openModal(title, contentHtml, onConfirm) {
+      const overlay = document.getElementById('modal-overlay');
+      const titleEl = document.getElementById('modal-title');
+      const contentEl = document.getElementById('modal-content');
+      const confirmBtn = document.getElementById('modal-confirm-btn');
+
+      if (title) {
+        titleEl.textContent = title;
+        contentEl.innerHTML = contentHtml || '';
+        modalOnConfirm = onConfirm || null;
+        overlay.style.display = 'flex';
+      } else {
+        overlay.style.display = 'flex';
+      }
+    }
+
+    let modalOnConfirm = null;
+    function closeModal() {
+      document.getElementById('modal-overlay').style.display = 'none';
+      modalOnConfirm = null;
+    }
+
+    function modalConfirm() {
+      if (modalOnConfirm) {
+        modalOnConfirm();
+        return;
+      }
+      // fallback to modalAction-based logic
+      if (modalAction === 'post') {
+        _modalConfirmPost();
+      } else if (modalAction === 'link') {
+        _modalConfirmLink();
+      } else if (modalAction === 'category') {
+        _modalConfirmCategory();
+      }
+    }
+
+    async function _modalConfirmPost() {
+      const data = {
+        title: document.getElementById('mp-title').value.trim(),
+        slug: document.getElementById('mp-slug').value.trim(),
+        category: document.getElementById('mp-category').value.trim() || 'general',
+        password: document.getElementById('mp-password').value,
+        content: document.getElementById('mp-content').value
+      };
+      if (!data.title || !data.slug || !data.content) {
+        showToast('Please fill in required fields'); return;
+      }
+      let res;
+      if (editingPostId) {
+        res = await fetch('/api/admin/posts/' + editingPostId, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      } else {
+        res = await fetch('/api/admin/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      }
+      const result = await res.json();
+      if (res.ok) {
+        showToast('Saved!');
+        closeModal();
+        loadPostsTable();
+        loadDashboardData();
+      } else {
+        showToast(result.error || 'Save failed');
+      }
+    }
+
+    async function _modalConfirmLink() {
+      const data = {
+        name: document.getElementById('mf-name').value.trim(),
+        url: document.getElementById('mf-url').value.trim(),
+        description: document.getElementById('mf-description').value.trim(),
+        sort_order: parseInt(document.getElementById('mf-sort').value) || 0
+      };
+      if (!data.name || !data.url) { showToast('Please fill in name and URL'); return; }
+      let res;
+      if (editingLinkId) {
+        res = await fetch('/api/admin/friends/' + editingLinkId, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      } else {
+        res = await fetch('/api/admin/friends', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      }
+      const result = await res.json();
+      if (res.ok) {
+        showToast('Saved!');
+        closeModal();
+        loadLinksTable();
+        loadDashboardData();
+      } else {
+        showToast(result.error || 'Save failed');
+      }
+    }
+
+    async function _modalConfirmCategory() {
+      const data = {
+        name: document.getElementById('mc-name').value.trim(),
+        slug: document.getElementById('mc-slug').value.trim()
+      };
+      if (!data.name || !data.slug) { showToast('Please fill in name and slug'); return; }
+      const res = await fetch('/api/admin/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      if (res.ok) {
+        showToast('Added!');
+        closeModal();
+        loadCategoriesTable();
+        loadDashboardData();
+      } else {
+        showToast(result.error || 'Add failed');
+      }
+    }
+
+    // ========== Delete Operations ==========
+    async function deletePost(id) {
+      if (!confirm('Are you sure you want to delete this post? This cannot be undone.')) return;
+      const res = await fetch('/api/admin/posts/' + id, { method: 'DELETE' });
+      if (res.ok) {
+        showToast('Deleted');
+        loadPostsTable();
+        loadDashboardData();
+      } else {
+        showToast('Delete failed');
+      }
+    }
+
+    async function deleteLink(id) {
+      if (!confirm('Are you sure you want to delete this link?')) return;
+      const res = await fetch('/api/admin/friends/' + id, { method: 'DELETE' });
+      if (res.ok) {
+        showToast('Deleted');
+        loadLinksTable();
+        loadDashboardData();
+      } else {
+        showToast('Delete failed');
+      }
+    }
+
+    async function deleteComment(id) {
+      if (!confirm('Are you sure you want to delete this comment?')) return;
+      const res = await fetch('/api/admin/comments/' + id, { method: 'DELETE' });
+      if (res.ok) {
+        showToast('Deleted');
+        loadCommentsTable();
+        loadDashboardData();
+      } else {
+        showToast('Delete failed');
+      }
+    }
+
+    async function deleteCategory(id) {
+      if (!confirm('Are you sure you want to delete this category?')) return;
+      const res = await fetch('/api/admin/categories/' + id, { method: 'DELETE' });
+      if (res.ok) {
+        showToast('Deleted');
+        loadCategoriesTable();
+        loadDashboardData();
+      } else {
+        showToast('Delete failed');
+      }
+    }
+
+    // ========== Change Password ==========
+    async function changePassword() {
+      const oldPwd = document.getElementById('old-password').value;
+      const newPwd = document.getElementById('new-password').value;
+      const confirmPwd = document.getElementById('confirm-password').value;
+
+      if (!oldPwd || !newPwd || !confirmPwd) {
+        showToast('Please fill in all fields'); return;
+      }
+      if (newPwd !== confirmPwd) {
+        showToast('Passwords do not match'); return;
+      }
+      if (newPwd.length < 6) {
+        showToast('New password must be at least 6 characters'); return;
+      }
+
+      const res = await fetch('/api/admin/password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldPassword: oldPwd, newPassword: newPwd })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        showToast('Password changed!');
+        document.getElementById('old-password').value = '';
+        document.getElementById('new-password').value = '';
+        document.getElementById('confirm-password').value = '';
+      } else {
+        showToast(data.error || 'Update failed');
+      }
+    }
+
+    // ========== Logout ==========
+    function handleLogout() {
+      fetch('/api/admin/logout', { method: 'POST' }).then(() => {
+        window.location.href = '/admin';
+      });
+    }
+
+    // ========== Utilities ==========
+    function escapeHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // ========== File Upload ==========
+    let pendingUploadType = null;
+    let uploadResolve = null;
+
+    function triggerUpload(type) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = {
+        image: 'image/*',
+        audio: 'audio/*',
+        video: 'video/*',
+        file: '*/*'
+      }[type];
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        doUpload(file, type);
+      };
+      input.click();
+    }
+
+    async function doUpload(file, type) {
+      const progressEl = document.getElementById('upload-progress');
+      const size = (file.size / 1024).toFixed(1);
+      progressEl.style.display = 'block';
+      progressEl.textContent = `Uploading ${file.name} (${size}KB)...`;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await fetch('/api/admin/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Upload failed');
+
+        // Build embed code on the frontend with proper encoding
+        const ta = document.getElementById('mp-content');
+        let embed = '';
+        const mt = data.mimetype || '';
+        const raw = new Uint8Array([...new TextEncoder().encode(data.url)]);
+        // Decode percent-encoded URL for display
+        let fileUrl = data.url;
+        try {
+          fileUrl = decodeURIComponent(data.url);
+        } catch(e) { fileUrl = data.url; }
+        // Extract filename from URL path for display
+        const pathParts = data.url.split('/');
+        const rawName = pathParts[pathParts.length - 1];
+        // Restore original extension from file object
+        const ext = file.name.split('.').pop();
+        const nameBase = file.name.replace(/\.[^.]+$/, '');
+        const displayName = nameBase + '.' + ext;
+
+        if (mt.startsWith('image/')) {
+          embed = `![](${data.url})\n`;
+        } else if (mt.startsWith('audio/')) {
+          embed = `<audio controls src="${data.url}"></audio>\n`;
+        } else if (mt.startsWith('video/')) {
+          embed = `<video controls src="${data.url}"></video>\n`;
+        } else {
+          embed = `[📎 ${displayName}](${data.url})\n`;
+        }
+
+        if (ta.setSelectionRange) {
+          const start = ta.selectionStart;
+          const end = ta.selectionEnd;
+          ta.value = ta.value.slice(0, start) + embed + ta.value.slice(end);
+          ta.selectionStart = ta.selectionEnd = start + embed.length;
+          ta.focus();
+        } else {
+          ta.value += '\n' + embed;
+          ta.focus();
+        }
+
+        progressEl.textContent = `✓ Uploaded: ${displayName}`;
+        setTimeout(() => { progressEl.style.display = 'none'; }, 3000);
+      } catch (err) {
+        progressEl.textContent = '✗ ' + (err.message || 'Upload failed');
+        setTimeout(() => { progressEl.style.display = 'none'; }, 4000);
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // ESC to close modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+  </script>
+
+  <div id="back-to-top" class="back-to-top" title="Back to top"></div>
+</body>
+</html>

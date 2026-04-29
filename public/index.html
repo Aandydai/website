@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>promise - Shall I compare thee to a summer's day?</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-left">
+      <a href="/" class="site-title">promise</a>
+      <img class="site-subtitle" src="/img/subtitle.svg" alt="Shall I compare thee to a summer's day?" onclick="openSearch()">
+    </div>
+    <nav class="nav">
+      <div class="nav-right">
+        <a href="/" class="active">Home</a>
+        <a href="/about">About</a>
+        <a href="/link">Link</a>
+        <a href="/admin" id="nav-admin">Admin</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="main">
+    <div id="post-list" class="post-list">
+      <!-- Post list rendered by JS -->
+    </div>
+    <div id="pagination" class="pagination">
+      <!-- Pagination rendered by JS -->
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-links">
+      <a href="/rss.xml" target="_blank">Posts RSS</a>
+      <a href="/archive">Archive</a>
+      <a href="/sitemap" id="sitemap-link">Sitemap</a>
+    </div>
+    <div>© promise | <a href="https://beian.miit.gov.cn" target="_blank">云ICP备18023681号-3</a></div>
+  </footer>
+
+  <div id="back-to-top" class="back-to-top" title="Back to top"></div>
+  <script src="/js/nav.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/search.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      loadPosts(1);
+    });
+  </script>
+</body>
+</html>
