@@ -5,6 +5,17 @@ const path = require('path');
 
 const DB_PATH = path.join(__dirname, 'data.db');
 let db = null;
+let _initPromise = null;
+let _initialized = false;
+
+// Lazy initialization — safe for Vercel cold starts
+async function ensureInit() {
+  if (_initialized) return;
+  if (!_initPromise) {
+    _initPromise = initDatabase().then(() => { _initialized = true; });
+  }
+  await _initPromise;
+}
 
 // sql.js does not support direct parameterized queries, need to use prepare + bind + step
 // Wrapper for safe query methods
@@ -183,4 +194,11 @@ function saveDatabase() {
   }
 }
 
-module.exports = { initDatabase, query: runQuery, get: runGet, run: runExec, saveDatabase };
+// Wrapped exports with lazy auto-init (safe for Vercel cold starts)
+module.exports = {
+  initDatabase,
+  query: async (...args) => { await ensureInit(); return runQuery(...args); },
+  get:    async (...args) => { await ensureInit(); return runGet(...args); },
+  run:    async (...args) => { await ensureInit(); return runExec(...args); },
+  saveDatabase: async ()  => { await ensureInit(); return saveDatabase(); }
+};
