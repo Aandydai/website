@@ -32,59 +32,73 @@
       transform: translate(-50%, -50%);
       min-width: 90%;
       max-height: 80%;
-      transition: top 1s ease;
+      transition: left 0.6s ease, top 0.6s ease, transform 0.6s ease;
     }
 
-    /* ====== Fold Buttons ====== */
+    /* ====== Fold Buttons: subtle, no background ====== */
     .fold-btn {
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      width: 28px;
-      height: 28px;
-      background: rgba(254, 254, 254, 0.7);
+      width: 24px;
+      height: 48px;
+      background: none;
       border: none;
-      border-radius: 50%;
       cursor: pointer;
       z-index: 100;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: top 0.5s ease, transform 0.5s ease, background 0.2s;
+      transition: opacity 0.3s;
       padding: 0;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      opacity: 0.25;
+      font-size: 18px;
+      color: #fefefe;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
     }
     .fold-btn:hover {
-      background: rgba(254, 254, 254, 0.95);
+      opacity: 0.8;
     }
-    .fold-btn.left  { left: -14px; }
-    .fold-btn.right { right: -14px; }
+    .fold-btn.left  { left: -22px; }
+    .fold-btn.right { right: -22px; }
 
-    /* Arrow icon: points inward (left arrow for left btn, right arrow for right btn) */
-    .fold-btn.left::before {
-      content: '';
-      display: block;
-      width: 0;
-      height: 0;
-      border-top: 6px solid transparent;
-      border-bottom: 6px solid transparent;
-      border-right: 9px solid #555;
-    }
-    .fold-btn.right::before {
-      content: '';
-      display: block;
-      width: 0;
-      height: 0;
-      border-top: 6px solid transparent;
-      border-bottom: 6px solid transparent;
-      border-left: 9px solid #555;
-    }
+    .fold-btn.left::before  { content: '\2039'; font-size: 32px; line-height: 1; }
+    .fold-btn.right::before { content: '\203A'; font-size: 32px; line-height: 1; }
 
-    /* Folded state: buttons near top, arrows flip outward */
-    body.folded .fold-btn {
-      top: 6px;
-      transform: rotate(180deg);
+    /* Folded-left: card slides to left edge */
+    body.folded-left #wrapper {
+      left: 0;
+      top: 50%;
+      transform: translate(0, -50%);
+      min-width: auto;
     }
+    body.folded-left #container {
+      width: 8px;
+      min-width: auto;
+      overflow: hidden;
+      padding: 0;
+      border-radius: 0 1em 1em 0;
+      max-height: 60vh;
+    }
+    body.folded-left .fold-btn { display: none; }
+
+    /* Folded-right: card slides to right edge */
+    body.folded-right #wrapper {
+      left: auto;
+      right: 0;
+      top: 50%;
+      transform: translate(0, -50%);
+      min-width: auto;
+    }
+    body.folded-right #container {
+      width: 8px;
+      min-width: auto;
+      overflow: hidden;
+      padding: 0;
+      border-radius: 1em 0 0 1em;
+      max-height: 60vh;
+    }
+    body.folded-right .fold-btn { display: none; }
 
     /* ====== Container ====== */
     #container {
@@ -95,19 +109,17 @@
       max-height: 80vh;
       padding: 2.5em 2em;
       text-align: center;
-      transition: height 1s ease;
+      transition: width 0.6s ease, min-width 0.6s ease, padding 0.6s ease, border-radius 0.6s ease;
       box-sizing: border-box;
     }
 
-    /* Folded: container shrinks */
-    body.folded #wrapper {
-      top: 0;
-    }
-    body.folded #container {
-      height: 6px;
-      overflow: hidden;
-      padding: 0;
-      border-radius: 0 0 1.5em 1.5em;
+    /* Unfold hint: show a thin bar to click */
+    body.folded-left #container::after,
+    body.folded-right #container::after {
+      content: '';
+      display: block;
+      width: 8px;
+      height: 100%;
     }
 
     /* ====== Header ====== */
@@ -302,22 +314,34 @@
         preloadNext();
       });
 
-      // ====== Fold / Unfold ======
-      var folded = false;
+      // ====== Fold / Unfold (directional) ======
+      var foldState = null; // 'left' | 'right' | null
       var leftBtn = document.getElementById('fold-btn-left');
       var rightBtn = document.getElementById('fold-btn-right');
+      var container = document.getElementById('container');
 
-      function toggleFold() {
-        folded = !folded;
-        if (folded) {
-          document.body.classList.add('folded');
+      function foldTo(side) {
+        if (foldState === side) {
+          // Unfold
+          document.body.classList.remove('folded-left', 'folded-right');
+          foldState = null;
         } else {
-          document.body.classList.remove('folded');
+          document.body.classList.remove('folded-left', 'folded-right');
+          document.body.classList.add('folded-' + side);
+          foldState = side;
         }
       }
 
-      leftBtn.addEventListener('click', toggleFold);
-      rightBtn.addEventListener('click', toggleFold);
+      // Click the thin bar to unfold
+      container.addEventListener('click', function(e) {
+        if (foldState && e.target === container) {
+          document.body.classList.remove('folded-left', 'folded-right');
+          foldState = null;
+        }
+      });
+
+      leftBtn.addEventListener('click', function() { foldTo('left'); });
+      rightBtn.addEventListener('click', function() { foldTo('right'); });
     })();
   </script>
 </body>
