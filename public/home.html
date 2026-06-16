@@ -11,14 +11,22 @@
       margin: 0; padding: 0;
     }
     body {
+      font-family: Georgia, 'Noto Serif SC', 'Times New Roman', serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Fixed background layer (works on all browsers including iOS) */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       background-size: cover;
-      background-attachment: fixed;
       background-position: 50% 50%;
       background-repeat: no-repeat;
       transition: background-image 2s ease;
-      background-image: url('/img/bg_fallback.jpg');
-      font-family: Georgia, 'Noto Serif SC', 'Times New Roman', serif;
-      -webkit-font-smoothing: antialiased;
+      background-image: var(--bg, url('/img/bg_fallback.jpg'));
+      z-index: -1;
     }
 
     /* ====== Container ====== */

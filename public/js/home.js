@@ -47,7 +47,7 @@
   }
 
   function setBg(url) {
-    document.body.style.backgroundImage = 'url(' + url + ')';
+    document.body.style.setProperty('--bg', 'url(' + url + ')');
     currentBgUrl = url;
   }
 
