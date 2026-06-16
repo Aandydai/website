@@ -58,7 +58,7 @@ app.use(helmet({
       'default-src': ["'self'"],
       'script-src': ["'self'", 'https://challenges.cloudflare.com'],
       'style-src': ["'self'", "'unsafe-inline'", 'https://challenges.cloudflare.com'],
-      'img-src': ["'self'", 'data:'],
+      'img-src': ["'self'", 'data:', 'https://images.unsplash.com', 'https://picsum.photos'],
       'frame-src': ["'self'", 'https://challenges.cloudflare.com', 'https://www.youtube.com', 'https://player.bilibili.com'],
       'connect-src': ["'self'", 'https://challenges.cloudflare.com'],
       'font-src': ["'self'"],
