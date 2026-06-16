@@ -16,9 +16,24 @@ const QRCode = require('qrcode');
 const { put, head, del } = require('@vercel/blob');
 const { initDatabase, query, get, run } = require('./database');
 
-// TOTP secret (generate once, store in env)
-const TOTP_SECRET = process.env.TOTP_SECRET || speakeasy.generateSecret({ name: 'promise-blog' }).base32;
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'promise2024';
+// TOTP secret — must be set via env var in production
+const TOTP_SECRET = process.env.TOTP_SECRET || (() => {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('FATAL: TOTP_SECRET must be set in production');
+    process.exit(1);
+  }
+  console.warn('WARNING: Using generated TOTP_SECRET — 2FA codes will change on restart');
+  return speakeasy.generateSecret({ name: 'promise-blog' }).base32;
+})();
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || (() => {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('FATAL: ADMIN_TOKEN must be set in production');
+    process.exit(1);
+  }
+  const fallback = crypto.randomBytes(16).toString('hex');
+  console.warn('WARNING: Using random ADMIN_TOKEN:', fallback);
+  return fallback;
+})();
 
 async function auditLog(username, action, detail = '') {
   try {
@@ -202,8 +217,15 @@ app.get('/api/csrf-token', (req, res) => {
 });
 
 // ========== Turnstile Config ==========
-const TURNSTILE_SITE_KEY = process.env.TURNSTILE_SITE_KEY || '0x4AAAAAADgRVL6HUdMiD9nV';
-const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || '0x4AAAAAADgRVDs85bssuuI8XAG62OhsbU8';
+const TURNSTILE_SITE_KEY = process.env.TURNSTILE_SITE_KEY || '0x4AAAAAADgRVL6HUdMiD9nV'; // public key
+const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || (() => {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('FATAL: TURNSTILE_SECRET_KEY must be set in production');
+    process.exit(1);
+  }
+  console.warn('WARNING: TURNSTILE_SECRET_KEY not set — Turnstile verification will fail');
+  return '';
+})();
 
 async function verifyTurnstile(token) {
   if (!token) return false;
