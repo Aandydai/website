@@ -691,6 +691,19 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
 
+    // Check account lockout
+    const lockRow = await get`SELECT value FROM settings WHERE key = 'login_locked_until'`;
+    if (lockRow) {
+      const lockedUntil = parseInt(lockRow.value);
+      if (Date.now() < lockedUntil) {
+        const mins = Math.ceil((lockedUntil - Date.now()) / 60000);
+        return res.status(429).json({ error: `Account locked. Try again in ${mins} minute(s).` });
+      }
+      // Lock expired, clear it
+      await run`DELETE FROM settings WHERE key = 'login_locked_until'`;
+      await run`DELETE FROM settings WHERE key = 'login_failures'`;
+    }
+
     // Validate Turnstile
     const turnstileOk = await verifyTurnstile(req.body['cf-turnstile-response']);
     if (!turnstileOk) {
@@ -717,8 +730,21 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
 
     const admin = await get`SELECT * FROM admin WHERE username = ${username}`;
     if (!admin || !bcrypt.compareSync(password, admin.password)) {
+      // Track failed attempts
+      const failRow = await get`SELECT value FROM settings WHERE key = 'login_failures'`;
+      const failures = (failRow ? parseInt(failRow.value) : 0) + 1;
+      if (failures >= 5) {
+        const lockUntil = Date.now() + 30 * 60 * 1000; // 30 min lockout
+        await run`INSERT INTO settings (key, value) VALUES ('login_locked_until', ${String(lockUntil)}) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`;
+        await run`DELETE FROM settings WHERE key = 'login_failures'`;
+        return res.status(429).json({ error: 'Too many failed attempts. Account locked for 30 minutes.' });
+      }
+      await run`INSERT INTO settings (key, value) VALUES ('login_failures', ${String(failures)}) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`;
       return res.status(401).json({ error: 'Invalid username or password' });
     }
+    // Successful login — clear failure counter
+    await run`DELETE FROM settings WHERE key = 'login_failures'`;
+    await run`DELETE FROM settings WHERE key = 'login_locked_until'`;
     const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '24h', issuer: 'promise-blog', audience: 'admin' });
     setAuthCookie(res, token);
     res.json({ success: true, recoveryUsed: usedRecovery });
