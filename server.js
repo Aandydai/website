@@ -1196,12 +1196,12 @@ app.post('/api/admin/recovery-codes', requireAdmin, csrfCheck, async (_req, res)
 app.put('/api/admin/password', requireAdmin, csrfCheck, async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
-    const admin = await get`SELECT * FROM admin WHERE username = 'promise'`;
-    if (!bcrypt.compareSync(oldPassword, admin.password)) {
+    const admin = await get`SELECT * FROM admin WHERE username = ${req.adminUser.username}`;
+    if (!admin || !bcrypt.compareSync(oldPassword, admin.password)) {
       return res.status(401).json({ error: 'Current password incorrect' });
     }
     const hash = bcrypt.hashSync(newPassword, 10);
-    await run`UPDATE admin SET password = ${hash} WHERE username = 'promise'`;
+    await run`UPDATE admin SET password = ${hash} WHERE username = ${req.adminUser.username}`;
     res.json({ success: true });
   } catch (err) {
     console.error('PUT /api/admin/password error:', err);
