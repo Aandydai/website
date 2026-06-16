@@ -24,10 +24,22 @@
       -webkit-font-smoothing: antialiased;
     }
 
+    /* ====== Wrapper: centers the card + buttons as a group ====== */
+    #wrapper {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 90%;
+      max-height: 80%;
+      transition: top 1s ease;
+    }
+
     /* ====== Fold Buttons ====== */
     .fold-btn {
-      position: fixed;
+      position: absolute;
       top: 50%;
+      transform: translateY(-50%);
       width: 28px;
       height: 28px;
       background: rgba(254, 254, 254, 0.7);
@@ -45,8 +57,8 @@
     .fold-btn:hover {
       background: rgba(254, 254, 254, 0.95);
     }
-    .fold-btn.left  { left: 20px; }
-    .fold-btn.right { right: 20px; }
+    .fold-btn.left  { left: -14px; }
+    .fold-btn.right { right: -14px; }
 
     /* Arrow icon: points inward (left arrow for left btn, right arrow for right btn) */
     .fold-btn.left::before {
@@ -70,7 +82,7 @@
 
     /* Folded state: buttons near top, arrows flip outward */
     body.folded .fold-btn {
-      top: 10px;
+      top: 6px;
       transform: rotate(180deg);
     }
 
@@ -80,22 +92,18 @@
       border-radius: 1.5em;
       color: #fefefe;
       overflow: auto;
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      min-width: 90%;
-      max-height: 80%;
+      max-height: 80vh;
       padding: 2.5em 2em;
       text-align: center;
-      transition: height 1s ease, top 1s ease, min-width 0.5s ease;
+      transition: height 1s ease;
       box-sizing: border-box;
     }
 
     /* Folded: container shrinks */
-    body.folded #container {
+    body.folded #wrapper {
       top: 0;
-      margin-top: 0;
+    }
+    body.folded #container {
       height: 6px;
       overflow: hidden;
       padding: 0;
@@ -168,42 +176,42 @@
 
     /* ====== Responsive ====== */
     @media (min-width: 641px) and (max-width: 770px) {
-      #container { min-width: 70%; }
+      #wrapper { min-width: 70%; }
     }
     @media (min-width: 771px) {
-      #container { min-width: 40%; max-width: 500px; }
+      #wrapper { min-width: 40%; max-width: 500px; }
     }
 
     @media (max-width: 640px) {
+      #wrapper { min-width: 90%; }
       #container {
-        min-width: 90%;
         padding: 1.8em 1.2em;
       }
       #header h1 { font-size: 1.6rem; }
       #nav-links a { font-size: 1rem; }
-      .fold-btn.left  { left: 8px; }
-      .fold-btn.right { right: 8px; }
     }
   </style>
 </head>
 <body>
 
-  <button id="fold-btn-left"  class="fold-btn left"  title="折叠/展开"></button>
-  <button id="fold-btn-right" class="fold-btn right" title="折叠/展开"></button>
+  <div id="wrapper">
+    <button id="fold-btn-left"  class="fold-btn left"  title="折叠/展开"></button>
+    <button id="fold-btn-right" class="fold-btn right" title="折叠/展开"></button>
 
-  <div id="container">
-    <div id="header">
-      <h1 onclick="changeBg()" title="点击切换背景">promise</h1>
-      <p>Shall I compare thee to a summer's day?</p>
-    </div>
-    <div id="nav-links">
-      <p><a href="/posts">posts</a></p>
-      <p><a href="/categories">categories</a></p>
-      <p><a href="/links">links</a></p>
-      <p><a href="/about">about</a></p>
-    </div>
-    <div id="footer">
-      <p><a href="mailto:contact@daishutao.online">Contact</a> | daishutao.online</p>
+    <div id="container">
+      <div id="header">
+        <h1 onclick="changeBg()" title="点击切换背景">promise</h1>
+        <p>Shall I compare thee to a summer's day?</p>
+      </div>
+      <div id="nav-links">
+        <p><a href="/posts">posts</a></p>
+        <p><a href="/categories">categories</a></p>
+        <p><a href="/links">links</a></p>
+        <p><a href="/about">about</a></p>
+      </div>
+      <div id="footer">
+        <p><a href="mailto:contact@daishutao.online">Contact</a> | daishutao.online</p>
+      </div>
     </div>
   </div>
 
