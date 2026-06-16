@@ -262,7 +262,11 @@ app.get('/api/admin/totp-setup', requireAdmin, async (req, res) => {
 
 // ========== Hidden Admin Entry ==========
 function hiddenAdmin(req, res, next) {
+  // If token is correct, proceed. Otherwise still show login page
+  // (the actual admin functions are protected by JWT auth)
   if (req.query.token === ADMIN_TOKEN) return next();
+  // Wrong or missing token: still show login, just don't auto-redirect to dashboard
+  if (!req.query.token) return next();
   res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
 }
 
