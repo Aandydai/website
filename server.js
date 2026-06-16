@@ -245,35 +245,25 @@ function hiddenAdmin(req, res, next) {
   res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
 }
 
-// ========== Image Proxy: Unsplash random background ==========
-const UNSPLASH_KEY = process.env.UNSPLASH_ACCESS_KEY || '';
+// ========== Image Proxy: Picsum random background (free, no auth) ==========
 let bgCache = [];
 let bgCacheExpiry = 0;
 
 async function refreshBgCache() {
-  if (!UNSPLASH_KEY) {
-    console.warn('[bg-cache] UNSPLASH_ACCESS_KEY not set, using fallback');
-    return;
-  }
   try {
-    const resp = await fetch(
-      'https://api.unsplash.com/photos/random?orientation=landscape&count=30&topics=nature,travel,wallpapers',
-      { headers: { 'Authorization': `Client-ID ${UNSPLASH_KEY}`, 'Accept-Version': 'v1' } }
-    );
-    if (!resp.ok) throw new Error(`Unsplash API ${resp.status}: ${resp.statusText}`);
+    // Fetch 80 images from Picsum, pick random subsets each time
+    const resp = await fetch('https://picsum.photos/v2/list?limit=80');
+    if (!resp.ok) throw new Error(`Picsum API ${resp.status}`);
     const data = await resp.json();
     bgCache = data.map(img => ({
       id: img.id,
-      url: img.urls.regular + '&w=1920&q=85',
-      full: img.urls.full,
-      author: img.user?.name || 'Unsplash',
-      color: img.color
+      url: `https://picsum.photos/id/${img.id}/1920/1080`,
+      author: img.author
     }));
-    bgCacheExpiry = Date.now() + 45 * 60 * 1000; // 45 min TTL (Unsplash rate: 50 req/h)
-    console.log(`[bg-cache] Refreshed from Unsplash, ${bgCache.length} images cached`);
+    bgCacheExpiry = Date.now() + 60 * 60 * 1000; // 1 hour TTL
+    console.log(`[bg-cache] Refreshed from Picsum, ${bgCache.length} images cached`);
   } catch (err) {
-    console.error('[bg-cache] Unsplash refresh failed:', err.message);
-    // Keep stale cache if refresh fails
+    console.error('[bg-cache] Picsum refresh failed:', err.message);
   }
 }
 
@@ -282,9 +272,8 @@ app.get('/api/random-bg/list', async (_req, res) => {
     await refreshBgCache();
   }
   if (bgCache.length === 0) {
-    // Fallback: Picsum (no auth needed)
+    // Hardcoded fallback
     const fallback = Array.from({ length: 20 }, (_, i) => ({
-      id: 1000 + i,
       url: `https://picsum.photos/id/${1000 + i}/1920/1080`
     }));
     return res.json({ urls: fallback.map(f => f.url) });
