@@ -46,8 +46,16 @@
     return bgList[Math.floor(Math.random() * bgList.length)];
   }
 
+  var bgImg = document.getElementById('bg-img');
+
   function setBg(url) {
-    document.body.style.setProperty('--bg', 'url(' + url + ')');
+    if (!bgImg) return;
+    // Fade out, swap, fade in
+    bgImg.style.opacity = '0';
+    setTimeout(function() {
+      bgImg.src = url;
+      bgImg.style.opacity = '1';
+    }, 400);
     currentBgUrl = url;
   }
 
@@ -78,7 +86,10 @@
   }
 
   loadImageList().then(function() {
-    setBg(randomUrl());
+    // Initial load: set directly without fade
+    var url = randomUrl();
+    if (bgImg) { bgImg.src = url; bgImg.style.opacity = '1'; }
+    currentBgUrl = url;
     preloadNext();
   });
 

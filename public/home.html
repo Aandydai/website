@@ -15,20 +15,15 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Fixed background layer (real DOM element, works on all platforms) */
-    #bg-layer {
+    /* Fixed background layer (img tag, works on all platforms) */
+    #bg-img {
       position: fixed;
       top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      background-size: cover;
-      background-position: 50% 50%;
-      background-repeat: no-repeat;
-      transition: background-image 2s ease;
-      background-image: var(--bg, url('/img/bg_fallback.jpg'));
+      width: 100%; height: 100%;
+      object-fit: cover;
       z-index: -1;
       pointer-events: none;
-      -webkit-transform: translateZ(0);
-      transform: translateZ(0);
+      transition: opacity 0.8s ease;
     }
 
     /* ====== Container ====== */
@@ -198,7 +193,7 @@
 </head>
 <body>
 
-  <div id="bg-layer"></div>
+  <img id="bg-img" src="/img/bg_fallback.jpg" alt="" />
 
   <button id="fold-btn-left"  class="fold-btn left"  type="button" title="折叠到左边"></button>
   <button id="fold-btn-right" class="fold-btn right" type="button" title="折叠到右边"></button>
