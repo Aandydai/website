@@ -245,25 +245,58 @@ function hiddenAdmin(req, res, next) {
   res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
 }
 
-// ========== Image Proxy: Picsum random background (free, no auth) ==========
+// ========== Image Proxy: Unsplash backgrounds (Picsum fallback) ==========
+const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY || '';
 let bgCache = [];
 let bgCacheExpiry = 0;
 
+async function refreshBgUnsplash() {
+  const resp = await fetch(
+    'https://api.unsplash.com/photos/random?orientation=landscape&count=30',
+    { headers: { 'Authorization': `Client-ID ${UNSPLASH_ACCESS_KEY}`, 'Accept-Version': 'v1' } }
+  );
+  if (!resp.ok) throw new Error(`Unsplash ${resp.status}: ${resp.statusText}`);
+  const data = await resp.json();
+  return data.map(img => ({
+    id: img.id,
+    url: img.urls.regular + '&w=1920&q=85',
+    author: img.user?.name || 'Unsplash'
+  }));
+}
+
+async function refreshBgPicsum() {
+  const resp = await fetch('https://picsum.photos/v2/list?limit=80');
+  if (!resp.ok) throw new Error(`Picsum ${resp.status}`);
+  const data = await resp.json();
+  return data.map(img => ({
+    id: img.id,
+    url: `https://picsum.photos/id/${img.id}/1920/1080`,
+    author: img.author
+  }));
+}
+
 async function refreshBgCache() {
   try {
-    // Fetch 80 images from Picsum, pick random subsets each time
-    const resp = await fetch('https://picsum.photos/v2/list?limit=80');
-    if (!resp.ok) throw new Error(`Picsum API ${resp.status}`);
-    const data = await resp.json();
-    bgCache = data.map(img => ({
-      id: img.id,
-      url: `https://picsum.photos/id/${img.id}/1920/1080`,
-      author: img.author
-    }));
-    bgCacheExpiry = Date.now() + 60 * 60 * 1000; // 1 hour TTL
-    console.log(`[bg-cache] Refreshed from Picsum, ${bgCache.length} images cached`);
+    if (UNSPLASH_ACCESS_KEY) {
+      bgCache = await refreshBgUnsplash();
+      console.log(`[bg-cache] Refreshed from Unsplash, ${bgCache.length} images`);
+    } else {
+      bgCache = await refreshBgPicsum();
+      console.log(`[bg-cache] Refreshed from Picsum, ${bgCache.length} images`);
+    }
+    bgCacheExpiry = Date.now() + 45 * 60 * 1000; // 45 min
   } catch (err) {
-    console.error('[bg-cache] Picsum refresh failed:', err.message);
+    console.error('[bg-cache] Primary failed:', err.message);
+    // Fallback to Picsum if Unsplash fails
+    if (UNSPLASH_ACCESS_KEY) {
+      try {
+        bgCache = await refreshBgPicsum();
+        console.log(`[bg-cache] Fallback to Picsum, ${bgCache.length} images`);
+        bgCacheExpiry = Date.now() + 45 * 60 * 1000;
+      } catch (e2) {
+        console.error('[bg-cache] Picsum fallback also failed:', e2.message);
+      }
+    }
   }
 }
 
@@ -272,7 +305,6 @@ app.get('/api/random-bg/list', async (_req, res) => {
     await refreshBgCache();
   }
   if (bgCache.length === 0) {
-    // Hardcoded fallback
     const fallback = Array.from({ length: 20 }, (_, i) => ({
       url: `https://picsum.photos/id/${1000 + i}/1920/1080`
     }));
