@@ -74,19 +74,31 @@
       left: 0;
       top: 50%;
       transform: translate(0, -50%);
-      width: 14px;
-      min-width: 14px;
+      width: 24px;
+      min-width: 24px;
       overflow: hidden;
       padding: 0;
       border-radius: 0 1em 1em 0;
-      max-height: 60vh;
+      max-height: 80vh;
+      cursor: pointer;
+    }
+    body.folded-left #container::after {
+      content: '›';
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #fefefe;
+      font-size: 20px;
+      opacity: 0.6;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
     }
     body.folded-left #container:hover {
       background-color: rgba(254, 254, 254, 0.15);
     }
+    body.folded-left #container:hover::after { opacity: 1; }
     body.folded-left .fold-btn.left  { opacity: 0; pointer-events: none; }
-    body.folded-left .fold-btn.right { left: 14px; right: auto; opacity: 0.6; }
-    body.folded-left .fold-btn.right::before { content: '›'; }
+    body.folded-left .fold-btn.right { left: 24px; right: auto; opacity: 0.6; }
 
     /* Folded-right: card to right edge */
     body.folded-right #container {
@@ -94,19 +106,31 @@
       right: 0;
       top: 50%;
       transform: translate(0, -50%);
-      width: 14px;
-      min-width: 14px;
+      width: 24px;
+      min-width: 24px;
       overflow: hidden;
       padding: 0;
       border-radius: 1em 0 0 1em;
-      max-height: 60vh;
+      max-height: 80vh;
+      cursor: pointer;
+    }
+    body.folded-right #container::after {
+      content: '‹';
+      position: absolute;
+      left: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #fefefe;
+      font-size: 20px;
+      opacity: 0.6;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
     }
     body.folded-right #container:hover {
       background-color: rgba(254, 254, 254, 0.15);
     }
+    body.folded-right #container:hover::after { opacity: 1; }
     body.folded-right .fold-btn.right { opacity: 0; pointer-events: none; }
-    body.folded-right .fold-btn.left  { left: auto; right: 14px; opacity: 0.6; }
-    body.folded-right .fold-btn.left::before { content: '‹'; }
+    body.folded-right .fold-btn.left  { left: auto; right: 24px; opacity: 0.6; }
 
     /* ====== Header ====== */
     #header h1 {
@@ -187,6 +211,19 @@
       }
       #header h1 { font-size: 1.6rem; }
       #nav-links a { font-size: 1rem; }
+
+      /* Larger touch targets on mobile */
+      body.folded-left #container,
+      body.folded-right #container {
+        width: 44px;
+        min-width: 44px;
+      }
+      body.folded-left #container::after,
+      body.folded-right #container::after {
+        font-size: 24px;
+      }
+      body.folded-left .fold-btn.right { left: 44px; }
+      body.folded-right .fold-btn.left  { right: 44px; }
     }
   </style>
 </head>
