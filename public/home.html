@@ -24,105 +24,89 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ====== Wrapper: centers the card + buttons as a group ====== */
-    #wrapper {
+    /* ====== Container ====== */
+    #container {
       position: absolute;
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
       min-width: 90%;
       max-height: 80%;
-      transition: left 0.6s ease, top 0.6s ease, transform 0.6s ease;
+      background-color: rgba(0, 0, 0, 0.3);
+      border-radius: 1.5em;
+      color: #fefefe;
+      overflow: auto;
+      padding: 2.5em 2em;
+      text-align: center;
+      transition: left 0.6s ease, top 0.6s ease, transform 0.6s ease,
+                  width 0.6s ease, padding 0.6s ease, border-radius 0.6s ease;
+      box-sizing: border-box;
     }
 
-    /* ====== Fold Buttons: subtle, no background ====== */
+    /* ====== Fold Buttons ====== */
     .fold-btn {
-      position: absolute;
+      display: block;
+      position: fixed;
       top: 50%;
       transform: translateY(-50%);
-      width: 28px;
-      height: 48px;
+      width: 32px;
+      height: 60px;
       background: none;
       border: none;
       cursor: pointer;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: opacity 0.3s;
+      z-index: 50;
       padding: 0;
-      opacity: 0.25;
-      font-size: 18px;
+      opacity: 0.2;
       color: #fefefe;
       text-shadow: 0 1px 2px rgba(0,0,0,0.5);
       outline: none;
+      transition: opacity 0.3s;
     }
-    .fold-btn:hover {
-      opacity: 0.8;
-    }
-    .fold-btn.left  { left: -24px; }
-    .fold-btn.right { right: -24px; }
+    .fold-btn:hover { opacity: 1; }
+    .fold-btn.left  { left: 0; }
+    .fold-btn.right { right: 0; }
 
-    .fold-btn.left::before  { content: '\2039'; font-size: 36px; line-height: 1; }
-    .fold-btn.right::before { content: '\203A'; font-size: 36px; line-height: 1; }
+    .fold-btn.left::before  { content: '‹'; font-size: 42px; }
+    .fold-btn.right::before { content: '›'; font-size: 42px; }
 
-    /* Folded-left: card slides to left edge */
-    body.folded-left #wrapper {
+    /* Folded-left: card to left edge */
+    body.folded-left #container {
       left: 0;
       top: 50%;
       transform: translate(0, -50%);
-      min-width: auto;
-    }
-    body.folded-left #container {
       width: 14px;
+      min-width: 14px;
       overflow: hidden;
       padding: 0;
       border-radius: 0 1em 1em 0;
       max-height: 60vh;
     }
-    body.folded-left .fold-btn { display: none; }
+    body.folded-left #container:hover {
+      background-color: rgba(254, 254, 254, 0.15);
+    }
+    body.folded-left .fold-btn.left  { opacity: 0; pointer-events: none; }
+    body.folded-left .fold-btn.right { left: 14px; right: auto; opacity: 0.6; }
+    body.folded-left .fold-btn.right::before { content: '›'; }
 
-    /* Folded-right: card slides to right edge */
-    body.folded-right #wrapper {
+    /* Folded-right: card to right edge */
+    body.folded-right #container {
       left: auto;
       right: 0;
       top: 50%;
       transform: translate(0, -50%);
-      min-width: auto;
-    }
-    body.folded-right #container {
       width: 14px;
+      min-width: 14px;
       overflow: hidden;
       padding: 0;
       border-radius: 1em 0 0 1em;
       max-height: 60vh;
     }
-    body.folded-right .fold-btn { display: none; }
-
-    /* ====== Container ====== */
-    #container {
-      position: relative;
-      z-index: 1;
-      background-color: rgba(0, 0, 0, 0.3);
-      border-radius: 1.5em;
-      color: #fefefe;
-      overflow: auto;
-      max-height: 80vh;
-      padding: 2.5em 2em;
-      text-align: center;
-      transition: width 0.6s ease, padding 0.6s ease, border-radius 0.6s ease;
-      box-sizing: border-box;
-    }
-
-    /* Unfold hint: click thin bar to restore */
-    body.folded-left #container,
-    body.folded-right #container {
-      cursor: pointer;
-    }
-    body.folded-left #container:hover,
     body.folded-right #container:hover {
       background-color: rgba(254, 254, 254, 0.15);
     }
+    body.folded-right .fold-btn.right { opacity: 0; pointer-events: none; }
+    body.folded-right .fold-btn.left  { left: auto; right: 14px; opacity: 0.6; }
+    body.folded-right .fold-btn.left::before { content: '‹'; }
 
     /* ====== Header ====== */
     #header h1 {
@@ -190,15 +174,15 @@
 
     /* ====== Responsive ====== */
     @media (min-width: 641px) and (max-width: 770px) {
-      #wrapper { min-width: 70%; }
+      #container { min-width: 70%; }
     }
     @media (min-width: 771px) {
-      #wrapper { min-width: 40%; max-width: 500px; }
+      #container { min-width: 40%; max-width: 500px; }
     }
 
     @media (max-width: 640px) {
-      #wrapper { min-width: 90%; }
       #container {
+        min-width: 90%;
         padding: 1.8em 1.2em;
       }
       #header h1 { font-size: 1.6rem; }
@@ -208,24 +192,22 @@
 </head>
 <body>
 
-  <div id="wrapper">
-    <button id="fold-btn-left"  class="fold-btn left"  title="折叠/展开"></button>
-    <button id="fold-btn-right" class="fold-btn right" title="折叠/展开"></button>
+  <button id="fold-btn-left"  class="fold-btn left"  type="button" title="折叠到左边"></button>
+  <button id="fold-btn-right" class="fold-btn right" type="button" title="折叠到右边"></button>
 
-    <div id="container">
-      <div id="header">
-        <h1 onclick="changeBg()" title="点击切换背景">promise</h1>
-        <p>Shall I compare thee to a summer's day?</p>
-      </div>
-      <div id="nav-links">
-        <p><a href="/posts">posts</a></p>
-        <p><a href="/categories">categories</a></p>
-        <p><a href="/links">links</a></p>
-        <p><a href="/about">about</a></p>
-      </div>
-      <div id="footer">
-        <p><a href="mailto:contact@daishutao.online">Contact</a> | daishutao.online</p>
-      </div>
+  <div id="container">
+    <div id="header">
+      <h1 onclick="changeBg()" title="点击切换背景">promise</h1>
+      <p>Shall I compare thee to a summer's day?</p>
+    </div>
+    <div id="nav-links">
+      <p><a href="/posts">posts</a></p>
+      <p><a href="/categories">categories</a></p>
+      <p><a href="/links">links</a></p>
+      <p><a href="/about">about</a></p>
+    </div>
+    <div id="footer">
+      <p><a href="mailto:contact@daishutao.online">Contact</a> | daishutao.online</p>
     </div>
   </div>
 
@@ -318,32 +300,41 @@
 
       // ====== Fold / Unfold (directional) ======
       var foldState = null; // 'left' | 'right' | null
+      var body = document.body;
       var leftBtn = document.getElementById('fold-btn-left');
       var rightBtn = document.getElementById('fold-btn-right');
       var container = document.getElementById('container');
 
-      function foldTo(side) {
+      function toggleFold(side) {
         if (foldState === side) {
-          // Unfold
-          document.body.classList.remove('folded-left', 'folded-right');
+          // Already folded to this side → unfold
+          body.classList.remove('folded-left', 'folded-right');
           foldState = null;
         } else {
-          document.body.classList.remove('folded-left', 'folded-right');
-          document.body.classList.add('folded-' + side);
+          // Fold to the requested side
+          body.classList.remove('folded-left', 'folded-right');
+          body.classList.add('folded-' + side);
           foldState = side;
         }
       }
 
-      // Click the thin bar to unfold
+      leftBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleFold('left');
+      });
+
+      rightBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleFold('right');
+      });
+
+      // Click the folded bar to unfold
       container.addEventListener('click', function(e) {
-        if (foldState && e.target === container) {
-          document.body.classList.remove('folded-left', 'folded-right');
+        if (foldState && (e.target === container)) {
+          body.classList.remove('folded-left', 'folded-right');
           foldState = null;
         }
       });
-
-      leftBtn.addEventListener('click', function() { foldTo('left'); });
-      rightBtn.addEventListener('click', function() { foldTo('right'); });
     })();
   </script>
 </body>
