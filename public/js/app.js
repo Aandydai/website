@@ -17,7 +17,7 @@ async function loadPosts(page = 1) {
 
     if (post.hasPassword) {
       item.innerHTML = `
-        <h2 class="post-title"><a href="/post/${post.slug}">${post.title}</a></h2>
+        <h2 class="post-title"><a href="/post/${post.slug}" target="_blank">${post.title}</a></h2>
         <div class="post-meta">
           Category: <a href="#">${post.category}</a> &nbsp;&middot;&nbsp; ${post.created_at}
         </div>
@@ -25,7 +25,7 @@ async function loadPosts(page = 1) {
       `;
     } else {
       item.innerHTML = `
-        <h2 class="post-title"><a href="/post/${post.slug}">${post.title}</a></h2>
+        <h2 class="post-title"><a href="/post/${post.slug}" target="_blank">${post.title}</a></h2>
         <div class="post-meta">
           Category: <a href="#">${post.category}</a> &nbsp;&middot;&nbsp; ${post.created_at} &nbsp;&middot;&nbsp; <a href="/post/${post.slug}#comments">${post.comment_count || 0} comments</a>
         </div>
@@ -191,8 +191,12 @@ async function loadAbout() {
   const data = await res.json();
 
   if (data.content_html) {
-    document.getElementById('page-content').innerHTML = data.content_html;
+    document.getElementById('about-body').innerHTML = data.content_html;
   }
+
+  const titleEl = document.getElementById('page-title');
+  if (titleEl) titleEl.textContent = 'About - promise';
+  document.title = 'About - promise';
 }
 
 // ========== Friends page ==========
@@ -250,6 +254,63 @@ async function loadArchive() {
   }
 }
 
+// ========== Categories page ==========
+async function loadCategories() {
+  document.getElementById('categories-heading').textContent = 'Categories';
+  document.getElementById('back-link').style.display = 'none';
+
+  const res = await fetch('/api/categories');
+  const data = await res.json();
+
+  const listEl = document.getElementById('categories-list');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+
+  if (!data.categories || data.categories.length === 0) {
+    listEl.innerHTML = '<p style="color:#999;">No categories yet.</p>';
+    return;
+  }
+
+  for (const c of data.categories) {
+    const card = document.createElement('div');
+    card.className = 'friend-card';
+    card.style.cursor = 'pointer';
+    card.innerHTML = '<h3>' + escapeHtml(c.name) + '</h3><p>' + (c.post_count || 0) + ' posts</p>';
+    card.addEventListener('click', function() { loadCategoryPosts(c.name); });
+    listEl.appendChild(card);
+  }
+}
+
+async function loadCategoryPosts(categoryName) {
+  const listEl = document.getElementById('categories-list');
+  if (!listEl) return;
+  listEl.innerHTML = '<p style="color:#999;">Loading posts in <strong>' + escapeHtml(categoryName) + '</strong>...</p>';
+
+  fetch('/api/posts?category=' + encodeURIComponent(categoryName))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      document.getElementById('categories-heading').textContent = categoryName;
+      var backEl = document.getElementById('back-link');
+      backEl.style.display = 'inline';
+      backEl.innerHTML = '<a href="#" id="back-to-cats" style="color:var(--link);font-size:14px;">&larr; Back to all</a>';
+      document.getElementById('back-to-cats').addEventListener('click', function(e) { e.preventDefault(); loadCategories(); });
+
+      if (!data.posts || data.posts.length === 0) {
+        listEl.innerHTML = '<p style="color:#999;">No posts in this category yet.</p>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < data.posts.length; i++) {
+        var p = data.posts[i];
+        html += '<div class="post-item">' +
+          '<h2 class="post-title"><a href="/post/' + p.slug + '">' + escapeHtml(p.title) + '</a></h2>' +
+          '<div class="post-meta">' + escapeHtml(p.category) + ' &nbsp;&middot;&nbsp; ' + p.created_at + '</div>' +
+          '<div class="post-preview">' + escapeHtml(p.content_preview || '') + '</div></div>';
+      }
+      listEl.innerHTML = html;
+    });
+}
+
 // ========== Admin: Login ==========
 async function adminLogin(username, password) {
   const res = await fetch('/api/admin/login', {
@@ -300,6 +361,22 @@ async function loadDashboardStats() {
   }
 }
 
+// ========== Footer ==========
+function loadFooter() {
+  fetch('/api/settings')
+    .then(r => r.json())
+    .then(data => {
+      const el = document.getElementById('footer-info');
+      if (!el) return;
+      let html = '© promise';
+      if (data.settings && data.settings.icp) {
+        html += ` | <a href="https://beian.miit.gov.cn" target="_blank">${escapeHtml(data.settings.icp)}</a>`;
+      }
+      el.innerHTML = html;
+    })
+    .catch(() => {});
+}
+
 // ========== Utilities ==========
 function escapeHtml(str) {
   if (!str) return '';
@@ -319,11 +396,40 @@ if (backToTopBtn) {
   });
 }
 
+// ========== Theme ==========
+(function() {
+  var saved = localStorage.getItem('theme');
+  if (saved === 'dark') document.documentElement.dataset.theme = 'dark';
+})();
+
+function toggleTheme() {
+  var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('theme', next);
+  var btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = next === 'dark' ? '☀' : '☾';
+}
+
 // ========== Page init ==========
 document.addEventListener('DOMContentLoaded', () => {
+  loadFooter();
+
+  // Inject theme toggle
+  var navRight = document.querySelector('.nav .nav-right');
+  if (navRight) {
+    var btn = document.createElement('button');
+    btn.id = 'theme-toggle';
+    btn.className = 'nav-icon';
+    btn.textContent = document.documentElement.dataset.theme === 'dark' ? '☀' : '☾';
+    btn.title = 'Toggle dark mode';
+    btn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:14px;padding:0;color:var(--accent)';
+    btn.addEventListener('click', toggleTheme);
+    navRight.appendChild(btn);
+  }
+
   const path = window.location.pathname;
 
-  if (path === '/' || path === '/index.html') {
+  if (path === '/' || path === '/index.html' || path === '/posts') {
     loadPosts(1);
   } else if (path === '/about') {
     loadAbout();
@@ -331,12 +437,44 @@ document.addEventListener('DOMContentLoaded', () => {
     loadFriends();
   } else if (path === '/archive') {
     loadArchive();
+  } else if (path === '/categories') {
+    loadCategories();
   } else if (path.startsWith('/post/')) {
     const slug = path.replace('/post/', '');
     loadPost(slug);
+    // Init comment form
+    const submitBtn = document.getElementById('submit-comment-btn');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', () => {
+        const author = document.getElementById('comment-author').value.trim();
+        const email = document.getElementById('comment-email').value.trim();
+        const content = document.getElementById('comment-content').value.trim();
+        if (!author || !email || !content) { alert('Please fill in nickname, email and comment content'); return; }
+        fetch('/api/posts/' + slug).then(r => r.json()).then(postData => {
+          fetch('/api/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ post_id: postData.id, author, email, url: document.getElementById('comment-url')?.value || '', content })
+          }).then(r => r.json()).then(() => {
+            document.getElementById('comment-content').value = '';
+            loadPost(slug);
+          });
+        });
+      });
+    }
+    // Password verify button
+    const verifyBtn = document.getElementById('verify-password-btn');
+    if (verifyBtn) {
+      verifyBtn.addEventListener('click', () => { if (typeof verifyPassword === 'function') verifyPassword(); });
+    }
+    // Enter key on password input
+    const passwordInput = document.getElementById('password-input');
+    if (passwordInput) {
+      passwordInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && typeof verifyPassword === 'function') verifyPassword();
+      });
+    }
   } else if (path === '/admin') {
-    fetch('/api/admin/stats').then(res => {
-      if (res.ok) window.location.href = '/admin/dashboard';
+    fetch('/api/admin/check').then(r => r.json()).then(data => {
+      if (data.loggedIn) window.location.href = '/admin/dashboard';
     }).catch(() => {});
   } else if (path === '/admin/dashboard') {
     loadDashboardStats();
