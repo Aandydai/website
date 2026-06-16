@@ -12,14 +12,14 @@
   <header class="header">
     <div class="header-left">
       <a href="/" class="site-title">promise</a>
-      <img class="site-subtitle" src="/img/subtitle.svg" alt="Shall I compare thee to a summer's day?" onclick="openSearch()">
+      <img class="site-subtitle" src="/img/subtitle.svg" alt="Shall I compare thee to a summer's day?">
     </div>
     <nav class="nav">
       <div class="nav-right">
         <a href="/">Home</a>
-        <a href="/about">About</a>
+        <a href="/categories">Categories</a>
         <a href="/link">Link</a>
-        <a href="/admin">Admin</a>
+        <a href="/about">About</a>
       </div>
     </nav>
   </header>
@@ -35,35 +35,16 @@
 
   <footer class="footer">
     <div class="footer-links">
-      <a href="/rss.xml" target="_blank">Posts RSS</a>
+      <a href="/">Posts</a>
+      <a href="/rss.xml" target="_blank">RSS</a>
       <a href="/archive">Archive</a>
     </div>
-    <div>© promise</div>
+    <div id="footer-info">© promise</div>
   </footer>
 
   <div id="back-to-top" class="back-to-top" title="Back to top"></div>
   <script src="/js/nav.js"></script>
   <script src="/js/app.js"></script>
   <script src="/js/search.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      fetch('/api/archive').then(r => r.json()).then(data => {
-        const listEl = document.getElementById('archive-list');
-        listEl.innerHTML = '';
-        for (const [month, posts] of Object.entries(data.archive)) {
-          const group = document.createElement('div');
-          group.className = 'archive-group';
-          group.innerHTML = '<h3>' + month + '</h3>';
-          for (const post of posts) {
-            const item = document.createElement('div');
-            item.className = 'archive-item';
-            item.innerHTML = '<span class="date">' + post.created_at + '</span><a href="/post/' + post.slug + '">' + escapeHtml(post.title) + '</a>';
-            group.appendChild(item);
-          }
-          listEl.appendChild(group);
-        }
-      });
-    });
-  </script>
 </body>
 </html>

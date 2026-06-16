@@ -12,14 +12,14 @@
   <header class="header">
     <div class="header-left">
       <a href="/" class="site-title">promise</a>
-      <img class="site-subtitle" src="/img/subtitle.svg" alt="Shall I compare thee to a summer's day?" onclick="openSearch()">
+      <img class="site-subtitle" src="/img/subtitle.svg" alt="Shall I compare thee to a summer's day?">
     </div>
     <nav class="nav">
       <div class="nav-right">
         <a href="/">Home</a>
-        <a href="/about">About</a>
+        <a href="/categories">Categories</a>
         <a href="/link">Link</a>
-        <a href="/admin">Admin</a>
+        <a href="/about">About</a>
       </div>
     </nav>
   </header>
@@ -32,7 +32,7 @@
       <input type="hidden" id="password-slug" value="">
       <input type="password" id="password-input" placeholder="Enter password...">
       <div id="password-error" style="color:#c00;font-size:13px;margin-bottom:8px;display:none;"></div>
-      <button class="btn" onclick="verifyPassword()">Unlock</button>
+      <button class="btn" id="verify-password-btn">Unlock</button>
     </div>
 
     <!-- Post body -->
@@ -72,49 +72,16 @@
 
   <footer class="footer">
     <div class="footer-links">
-      <a href="/rss.xml" target="_blank">Posts RSS</a>
+      <a href="/">Posts</a>
+      <a href="/rss.xml" target="_blank">RSS</a>
       <a href="/archive">Archive</a>
     </div>
-    <div>© promise</div>
+    <div id="footer-info">© promise</div>
   </footer>
 
   <div id="back-to-top" class="back-to-top" title="Back to top"></div>
   <script src="/js/nav.js"></script>
   <script src="/js/app.js"></script>
   <script src="/js/search.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const slug = window.location.pathname.replace('/post/', '');
-      loadPost(slug);
-
-      document.getElementById('submit-comment-btn').addEventListener('click', () => {
-        const author = document.getElementById('comment-author').value.trim();
-        const email = document.getElementById('comment-email').value.trim();
-        const content = document.getElementById('comment-content').value.trim();
-
-        if (!author || !email || !content) {
-          alert('Please fill in nickname, email and comment content');
-          return;
-        }
-
-        fetch('/api/posts/' + slug).then(r => r.json()).then(postData => {
-          fetch('/api/comments', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              post_id: postData.id,
-              author,
-              email,
-              url: document.getElementById('comment-url')?.value || '',
-              content
-            })
-          }).then(r => r.json()).then(() => {
-            document.getElementById('comment-content').value = '';
-            loadPost(slug);
-          });
-        });
-      });
-    });
-  </script>
 </body>
 </html>

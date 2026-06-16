@@ -12,14 +12,14 @@
   <header class="header">
     <div class="header-left">
       <a href="/" class="site-title">promise</a>
-      <img class="site-subtitle" src="/img/subtitle.svg" alt="Shall I compare thee to a summer's day?" onclick="openSearch()">
+      <img class="site-subtitle" src="/img/subtitle.svg" alt="Shall I compare thee to a summer's day?">
     </div>
     <nav class="nav">
       <div class="nav-right">
         <a href="/">Home</a>
-        <a href="/about" class="active">About</a>
+        <a href="/categories">Categories</a>
         <a href="/link">Link</a>
-        <a href="/admin">Admin</a>
+        <a href="/about" class="active">About</a>
       </div>
     </nav>
   </header>
@@ -35,24 +35,16 @@
 
   <footer class="footer">
     <div class="footer-links">
-      <a href="/rss.xml" target="_blank">Posts RSS</a>
+      <a href="/">Posts</a>
+      <a href="/rss.xml" target="_blank">RSS</a>
       <a href="/archive">Archive</a>
     </div>
-    <div>© promise</div>
+    <div id="footer-info">© promise</div>
   </footer>
 
   <div id="back-to-top" class="back-to-top" title="Back to top"></div>
   <script src="/js/nav.js"></script>
   <script src="/js/app.js"></script>
   <script src="/js/search.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      fetch('/api/about').then(r => r.json()).then(data => {
-        document.getElementById('page-title') && (document.getElementById('page-title').textContent = 'About - promise');
-        document.title = 'About - promise';
-        document.getElementById('about-body').innerHTML = data.content_html || '<p>' + escapeHtml(data.content) + '</p>';
-      });
-    });
-  </script>
 </body>
 </html>
