@@ -67,13 +67,26 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  // Disable button until Turnstile is ready
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Loading...';
+
   // Wait for Turnstile to load, then render widget
   var checkInterval = setInterval(function() {
     if (window.turnstile) {
       clearInterval(checkInterval);
       window.turnstile.render('#turnstile-widget', {
         sitekey: '0x4AAAAAADlqE0ldkFp00wjv',
-        theme: 'auto'
+        theme: 'auto',
+        callback: function() {
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Login';
+          errorEl.style.display = 'none';
+        },
+        'error-callback': function() {
+          errorEl.textContent = 'Captcha failed to load, please refresh the page';
+          errorEl.style.display = 'block';
+        }
       });
     }
   }, 200);
