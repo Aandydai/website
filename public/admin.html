@@ -5,12 +5,158 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <title>Admin Login - promise</title>
-  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    html, body {
+      width: 100%; height: 100%;
+      margin: 0; padding: 0;
+    }
+    body {
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      -webkit-background-size: cover;
+      -moz-background-size: cover;
+      -o-background-size: cover;
+      background-size: cover;
+      background-position: 50% 50%;
+      transition: background-image 2s ease;
+      background-image: url(https://picsum.photos/id/1051/1920/1080);
+      font-family: Georgia, 'Noto Serif SC', 'Times New Roman', serif;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-container {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 1.5em;
+      padding: 2.5em 2.5em 2em;
+      width: 90%;
+      max-width: 380px;
+      box-sizing: border-box;
+      text-align: center;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+    }
+
+    .login-container h2 {
+      font-family: Georgia, 'Noto Serif SC', serif;
+      font-size: 1.6rem;
+      font-weight: bold;
+      color: #3a3a3a;
+      margin: 0 0 0.15em 0;
+      letter-spacing: 0.03em;
+    }
+    .login-container .subtitle {
+      font-size: 0.8rem;
+      color: #999;
+      margin-bottom: 1.8em;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+      text-align: left;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      color: #888;
+      margin-bottom: 4px;
+      letter-spacing: 0.02em;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: Georgia, 'Noto Serif SC', serif;
+      box-sizing: border-box;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: rgba(255,255,255,0.7);
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: #c9a96e;
+      box-shadow: 0 0 0 3px rgba(201,169,110,0.15);
+    }
+    .form-group input::placeholder {
+      color: #ccc;
+    }
+    #totp-input {
+      text-align: center;
+      font-size: 18px;
+      letter-spacing: 4px;
+    }
+
+    #login-error {
+      font-size: 0.8rem;
+      color: #c0392b;
+      margin-bottom: 12px;
+      display: none;
+      text-align: center;
+    }
+
+    #turnstile-widget {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 6px;
+    }
+
+    #login-btn {
+      width: 100%;
+      padding: 12px;
+      background: #3a3a3a;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: Georgia, 'Noto Serif SC', serif;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      margin-top: 4px;
+    }
+    #login-btn:hover {
+      background: #555;
+    }
+    #login-btn:active {
+      transform: scale(0.98);
+    }
+    #login-btn:disabled {
+      background: #bbb;
+      cursor: not-allowed;
+    }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 18px;
+      font-size: 0.85rem;
+    }
+    .back-link a {
+      color: #999;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .back-link a:hover {
+      color: #555;
+    }
+
+    @media (max-width: 640px) {
+      .login-container {
+        width: 88%;
+        padding: 2em 1.5em 1.5em;
+      }
+    }
+  </style>
 </head>
 <body>
 
   <div class="login-container">
-    <h2>🔐 Admin Login</h2>
+    <h2>promise</h2>
+    <p class="subtitle">admin panel</p>
     <div id="login-error" class="login-error"></div>
     <div class="form-group">
       <label>Username</label>
@@ -21,16 +167,14 @@
       <input type="password" id="password" placeholder="Password" autocomplete="current-password">
     </div>
     <div class="form-group">
-      <div id="turnstile-widget" style="display:flex;justify-content:center;margin-bottom:12px;"></div>
+      <div id="turnstile-widget"></div>
     </div>
     <div class="form-group">
       <label>Verification Code</label>
-      <input type="text" id="totp-input" placeholder="6-digit Authenticator code" maxlength="6" style="text-align:center;font-size:18px;letter-spacing:4px;" inputmode="numeric" autocomplete="one-time-code">
+      <input type="text" id="totp-input" placeholder="6-digit Authenticator code" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
     </div>
-    <button class="btn" id="login-btn" style="width:100%;">Login</button>
-    <p style="text-align:center;margin-top:16px;font-size:13px;">
-      <a href="/">← Back to Home</a>
-    </p>
+    <button class="btn" id="login-btn" type="button">Login</button>
+    <p class="back-link"><a href="/">Home</a></p>
   </div>
 
   <script src="/js/admin.js"></script>
