@@ -74,8 +74,8 @@
       left: 0;
       top: 50%;
       transform: translate(0, -50%);
-      width: 24px;
-      min-width: 24px;
+      width: 36px;
+      min-width: 36px;
       overflow: hidden;
       padding: 0;
       border-radius: 0 1em 1em 0;
@@ -83,23 +83,37 @@
       cursor: pointer;
     }
     body.folded-left #container > * { pointer-events: none; }
+    body.folded-left #container::before {
+      content: 'promise';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) rotate(-90deg);
+      color: #fefefe;
+      font-size: 16px;
+      font-weight: bold;
+      white-space: nowrap;
+      letter-spacing: 4px;
+      opacity: 0.7;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
     body.folded-left #container::after {
       content: '›';
       position: absolute;
-      right: 4px;
-      top: 50%;
-      transform: translateY(-50%);
+      right: 6px;
+      bottom: 12px;
       color: #fefefe;
-      font-size: 20px;
-      opacity: 0.6;
+      font-size: 18px;
+      opacity: 0.5;
       text-shadow: 0 1px 2px rgba(0,0,0,0.5);
     }
     body.folded-left #container:hover {
-      background-color: rgba(254, 254, 254, 0.15);
+      background-color: rgba(254, 254, 254, 0.12);
     }
+    body.folded-left #container:hover::before,
     body.folded-left #container:hover::after { opacity: 1; }
     body.folded-left .fold-btn.left  { opacity: 0; pointer-events: none; }
-    body.folded-left .fold-btn.right { left: 24px; right: auto; opacity: 0.6; }
+    body.folded-left .fold-btn.right { left: 36px; right: auto; opacity: 0.6; }
 
     /* Folded-right: card to right edge */
     body.folded-right #container {
@@ -107,8 +121,8 @@
       right: 0;
       top: 50%;
       transform: translate(0, -50%);
-      width: 24px;
-      min-width: 24px;
+      width: 36px;
+      min-width: 36px;
       overflow: hidden;
       padding: 0;
       border-radius: 1em 0 0 1em;
@@ -116,23 +130,37 @@
       cursor: pointer;
     }
     body.folded-right #container > * { pointer-events: none; }
+    body.folded-right #container::before {
+      content: 'promise';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) rotate(-90deg);
+      color: #fefefe;
+      font-size: 16px;
+      font-weight: bold;
+      white-space: nowrap;
+      letter-spacing: 4px;
+      opacity: 0.7;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
     body.folded-right #container::after {
       content: '‹';
       position: absolute;
-      left: 4px;
-      top: 50%;
-      transform: translateY(-50%);
+      left: 6px;
+      bottom: 12px;
       color: #fefefe;
-      font-size: 20px;
-      opacity: 0.6;
+      font-size: 18px;
+      opacity: 0.5;
       text-shadow: 0 1px 2px rgba(0,0,0,0.5);
     }
     body.folded-right #container:hover {
-      background-color: rgba(254, 254, 254, 0.15);
+      background-color: rgba(254, 254, 254, 0.12);
     }
+    body.folded-right #container:hover::before,
     body.folded-right #container:hover::after { opacity: 1; }
     body.folded-right .fold-btn.right { opacity: 0; pointer-events: none; }
-    body.folded-right .fold-btn.left  { left: auto; right: 24px; opacity: 0.6; }
+    body.folded-right .fold-btn.left  { left: auto; right: 36px; opacity: 0.6; }
 
     /* ====== Header ====== */
     #header h1 {
@@ -214,18 +242,23 @@
       #header h1 { font-size: 1.6rem; }
       #nav-links a { font-size: 1rem; }
 
-      /* Larger touch targets on mobile */
+      /* Larger touch targets + bigger vertical text on mobile */
       body.folded-left #container,
       body.folded-right #container {
-        width: 44px;
-        min-width: 44px;
+        width: 48px;
+        min-width: 48px;
+      }
+      body.folded-left #container::before,
+      body.folded-right #container::before {
+        font-size: 18px;
+        letter-spacing: 6px;
       }
       body.folded-left #container::after,
       body.folded-right #container::after {
-        font-size: 24px;
+        font-size: 22px;
       }
-      body.folded-left .fold-btn.right { left: 44px; }
-      body.folded-right .fold-btn.left  { right: 44px; }
+      body.folded-left .fold-btn.right { left: 48px; }
+      body.folded-right .fold-btn.left  { right: 48px; }
     }
   </style>
 </head>
