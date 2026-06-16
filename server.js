@@ -217,7 +217,7 @@ app.get('/api/csrf-token', (req, res) => {
 });
 
 // ========== Turnstile Config ==========
-const TURNSTILE_SITE_KEY = process.env.TURNSTILE_SITE_KEY || '0x4AAAAAADgRVL6HUdMiD9nV'; // public key
+const TURNSTILE_SITE_KEY = process.env.TURNSTILE_SITE_KEY || '0x4AAAAAADlqE0ldkFp00wjv'; // public key
 const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || (() => {
   if (process.env.NODE_ENV === 'production') {
     console.error('FATAL: TURNSTILE_SECRET_KEY must be set in production');

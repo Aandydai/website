@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.turnstile) {
       clearInterval(checkInterval);
       window.turnstile.render('#turnstile-widget', {
-        sitekey: '0x4AAAAAADgRVL6HUdMiD9nV',
+        sitekey: '0x4AAAAAADlqE0ldkFp00wjv',
         theme: 'auto'
       });
     }
