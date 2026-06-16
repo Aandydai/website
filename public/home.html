@@ -40,12 +40,12 @@
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      width: 24px;
+      width: 28px;
       height: 48px;
       background: none;
       border: none;
       cursor: pointer;
-      z-index: 100;
+      z-index: 10;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -55,15 +55,16 @@
       font-size: 18px;
       color: #fefefe;
       text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      outline: none;
     }
     .fold-btn:hover {
       opacity: 0.8;
     }
-    .fold-btn.left  { left: -22px; }
-    .fold-btn.right { right: -22px; }
+    .fold-btn.left  { left: -24px; }
+    .fold-btn.right { right: -24px; }
 
-    .fold-btn.left::before  { content: '\2039'; font-size: 32px; line-height: 1; }
-    .fold-btn.right::before { content: '\203A'; font-size: 32px; line-height: 1; }
+    .fold-btn.left::before  { content: '\2039'; font-size: 36px; line-height: 1; }
+    .fold-btn.right::before { content: '\203A'; font-size: 36px; line-height: 1; }
 
     /* Folded-left: card slides to left edge */
     body.folded-left #wrapper {
@@ -74,7 +75,6 @@
     }
     body.folded-left #container {
       width: 8px;
-      min-width: auto;
       overflow: hidden;
       padding: 0;
       border-radius: 0 1em 1em 0;
@@ -92,7 +92,6 @@
     }
     body.folded-right #container {
       width: 8px;
-      min-width: auto;
       overflow: hidden;
       padding: 0;
       border-radius: 1em 0 0 1em;
@@ -102,6 +101,8 @@
 
     /* ====== Container ====== */
     #container {
+      position: relative;
+      z-index: 1;
       background-color: rgba(0, 0, 0, 0.3);
       border-radius: 1.5em;
       color: #fefefe;
@@ -109,17 +110,18 @@
       max-height: 80vh;
       padding: 2.5em 2em;
       text-align: center;
-      transition: width 0.6s ease, min-width 0.6s ease, padding 0.6s ease, border-radius 0.6s ease;
+      transition: width 0.6s ease, padding 0.6s ease, border-radius 0.6s ease;
       box-sizing: border-box;
     }
 
-    /* Unfold hint: show a thin bar to click */
-    body.folded-left #container::after,
-    body.folded-right #container::after {
-      content: '';
-      display: block;
-      width: 8px;
-      height: 100%;
+    /* Unfold hint: click thin bar to restore */
+    body.folded-left #container,
+    body.folded-right #container {
+      cursor: pointer;
+    }
+    body.folded-left #container:hover,
+    body.folded-right #container:hover {
+      background-color: rgba(254, 254, 254, 0.15);
     }
 
     /* ====== Header ====== */
