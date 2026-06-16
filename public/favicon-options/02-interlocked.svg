@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="g2a" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#C9A96E"/>
+      <stop offset="100%" stop-color="#8B6914"/>
+    </linearGradient>
+    <linearGradient id="g2b" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4A6FA5"/>
+      <stop offset="100%" stop-color="#2C4470"/>
+    </linearGradient>
+  </defs>
+  <!-- left ring (warm gold) -->
+  <ellipse cx="24" cy="32" rx="13" ry="20" fill="none" stroke="url(#g2a)" stroke-width="5"/>
+  <!-- right ring (cool blue) -->
+  <ellipse cx="40" cy="32" rx="13" ry="20" fill="none" stroke="url(#g2b)" stroke-width="5"/>
+</svg>

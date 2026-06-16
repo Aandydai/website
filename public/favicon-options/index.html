@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Favicon Options - promise</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Georgia, 'Noto Serif SC', 'Times New Roman', serif;
+      background: #1a1a2e;
+      color: #e8d5b7;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 8px;
+      letter-spacing: 2px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #8b7b6b;
+      margin-bottom: 40px;
+      font-size: 0.9rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .card {
+      background: #232344;
+      border: 1px solid #333;
+      border-radius: 16px;
+      padding: 28px;
+      text-align: center;
+      transition: border-color 0.3s, transform 0.2s;
+    }
+    .card:hover {
+      border-color: #c9a96e;
+      transform: translateY(-2px);
+    }
+    .card .icon {
+      width: 96px;
+      height: 96px;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f5f0e8;
+      border-radius: 24px;
+      padding: 16px;
+    }
+    .card .icon img {
+      width: 64px;
+      height: 64px;
+    }
+    .card h3 {
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+    .card p {
+      font-size: 0.85rem;
+      color: #8b7b6b;
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+    .card .sizes {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+    .card .sizes span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: #1a1a2e;
+      overflow: hidden;
+    }
+    .size-label {
+      font-size: 0.7rem;
+      color: #6b6b8b;
+      margin-top: 6px;
+    }
+    .action {
+      text-align: center;
+      margin-top: 40px;
+      color: #6b6b8b;
+      font-size: 0.85rem;
+    }
+    .action code {
+      background: #232344;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #c9a96e;
+    }
+  </style>
+</head>
+<body>
+  <h1>promise · Favicon</h1>
+  <p class="subtitle">Select one to use as the site favicon</p>
+
+  <div class="grid">
+
+    <div class="card">
+      <div class="icon"><img src="01-classic-seal.svg" alt="Classic Seal"></div>
+      <h3>01 · Classic Seal</h3>
+      <p>A refined serif "P" enclosed in a double-ring seal. Warm earthy brown evokes trust, tradition, and permanence.</p>
+      <div class="sizes">
+        <span><img src="01-classic-seal.svg" width="32" height="32"></span>
+        <span><img src="01-classic-seal.svg" width="24" height="24"></span>
+        <span><img src="01-classic-seal.svg" width="16" height="16"></span>
+      </div>
+      <div class="size-label">32px · 24px · 16px</div>
+    </div>
+
+    <div class="card">
+      <div class="icon"><img src="02-interlocked.svg" alt="Interlocked"></div>
+      <h3>02 · Interlocked</h3>
+      <p>Two overlapping rings in warm gold and cool blue — a bond, a vow, a promise between two. Abstract and memorable.</p>
+      <div class="sizes">
+        <span><img src="02-interlocked.svg" width="32" height="32"></span>
+        <span><img src="02-interlocked.svg" width="24" height="24"></span>
+        <span><img src="02-interlocked.svg" width="16" height="16"></span>
+      </div>
+      <div class="size-label">32px · 24px · 16px</div>
+    </div>
+
+    <div class="card">
+      <div class="icon"><img src="03-modern-p.svg" alt="Modern P"></div>
+      <h3>03 · Modern P</h3>
+      <p>Clean geometric sans-serif "P" on a dark rounded square. A warm gold accent dot adds a touch of personality.</p>
+      <div class="sizes">
+        <span><img src="03-modern-p.svg" width="32" height="32"></span>
+        <span><img src="03-modern-p.svg" width="24" height="24"></span>
+        <span><img src="03-modern-p.svg" width="16" height="16"></span>
+      </div>
+      <div class="size-label">32px · 24px · 16px</div>
+    </div>
+
+    <div class="card">
+      <div class="icon"><img src="04-script-flourish.svg" alt="Script Flourish"></div>
+      <h3>04 · Script Flourish</h3>
+      <p>A flowing hand-drawn "p" with a graceful curl. Warm copper gradient gives it an artisanal, personal feel.</p>
+      <div class="sizes">
+        <span><img src="04-script-flourish.svg" width="32" height="32"></span>
+        <span><img src="04-script-flourish.svg" width="24" height="24"></span>
+        <span><img src="04-script-flourish.svg" width="16" height="16"></span>
+      </div>
+      <div class="size-label">32px · 24px · 16px</div>
+    </div>
+
+    <div class="card">
+      <div class="icon"><img src="05-gem-cut.svg" alt="Gem Cut"></div>
+      <h3>05 · Gem Cut</h3>
+      <p>A diamond silhouette with a bold "P" center — a promise is precious. Sapphire blue conveys depth and sincerity.</p>
+      <div class="sizes">
+        <span><img src="05-gem-cut.svg" width="32" height="32"></span>
+        <span><img src="05-gem-cut.svg" width="24" height="24"></span>
+        <span><img src="05-gem-cut.svg" width="16" height="16"></span>
+      </div>
+      <div class="size-label">32px · 24px · 16px</div>
+    </div>
+
+  </div>
+
+  <div class="action">
+    Open this page on your site: <code>/favicon-options/</code>
+  </div>
+</body>
+</html>

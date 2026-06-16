@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- dark rounded square bg -->
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="#1a1a2e"/>
+  <!-- P letter with accent -->
+  <text x="30" y="44" text-anchor="middle" font-family="'Helvetica Neue', Arial, sans-serif" font-size="38" font-weight="700" fill="#e8d5b7">P</text>
+  <!-- accent dot -->
+  <circle cx="48" cy="18" r="4" fill="#c9a96e"/>
+</svg>
