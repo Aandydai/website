@@ -15,18 +15,20 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Fixed background layer (works on all browsers including iOS) */
-    body::before {
-      content: '';
+    /* Fixed background layer (real DOM element, works on all platforms) */
+    #bg-layer {
       position: fixed;
       top: 0; left: 0;
-      width: 100%; height: 100%;
+      width: 100vw; height: 100vh;
       background-size: cover;
       background-position: 50% 50%;
       background-repeat: no-repeat;
       transition: background-image 2s ease;
       background-image: var(--bg, url('/img/bg_fallback.jpg'));
       z-index: -1;
+      pointer-events: none;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
     }
 
     /* ====== Container ====== */
@@ -195,6 +197,8 @@
   </style>
 </head>
 <body>
+
+  <div id="bg-layer"></div>
 
   <button id="fold-btn-left"  class="fold-btn left"  type="button" title="折叠到左边"></button>
   <button id="fold-btn-right" class="fold-btn right" type="button" title="折叠到右边"></button>
