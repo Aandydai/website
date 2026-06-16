@@ -270,7 +270,7 @@ function hiddenAdmin(req, res, next) {
     // Valid token via URL — set a persistent cookie for future visits
     res.cookie('admin_entry_token', ADMIN_TOKEN, {
       httpOnly: true, secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict', maxAge: 365 * 24 * 60 * 60 * 1000
+      sameSite: 'strict', maxAge: 30 * 24 * 60 * 60 * 1000
     });
     return next();
   }
