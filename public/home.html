@@ -7,12 +7,9 @@
   <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
   <style>
     html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
+      width: 100%; height: 100%;
+      margin: 0; padding: 0;
     }
-
     body {
       background-size: cover;
       background-attachment: fixed;
@@ -27,8 +24,7 @@
     /* ====== Container ====== */
     #container {
       position: absolute;
-      left: 50%;
-      top: 50%;
+      left: 50%; top: 50%;
       transform: translate(-50%, -50%);
       min-width: 90%;
       max-height: 80%;
@@ -49,8 +45,7 @@
       position: fixed;
       top: 50%;
       transform: translateY(-50%);
-      width: 32px;
-      height: 60px;
+      width: 32px; height: 60px;
       background: none;
       border: none;
       cursor: pointer;
@@ -60,112 +55,69 @@
       color: #fefefe;
       text-shadow: 0 1px 2px rgba(0,0,0,0.5);
       outline: none;
-      transition: opacity 0.3s;
+      transition: opacity 0.3s, left 0.6s ease, right 0.6s ease;
     }
     .fold-btn:hover { opacity: 1; }
     .fold-btn.left  { left: 0; }
     .fold-btn.right { right: 0; }
-
     .fold-btn.left::before  { content: '‹'; font-size: 42px; }
     .fold-btn.right::before { content: '›'; font-size: 42px; }
 
-    /* Folded-left: card to left edge */
+    /* ====== Fold Label (vertical promise text, shown when folded) ====== */
+    #fold-label {
+      display: none;
+      position: absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%) rotate(-90deg);
+      color: #fefefe;
+      font-size: 16px;
+      font-weight: bold;
+      white-space: nowrap;
+      letter-spacing: 4px;
+      opacity: 0.7;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      pointer-events: none;
+    }
+
+    /* ====== Folded-left ====== */
     body.folded-left #container {
-      left: 0;
-      top: 50%;
+      left: 0; top: 50%;
       transform: translate(0, -50%);
-      width: 36px;
-      min-width: 36px;
+      width: 36px; min-width: 36px;
       overflow: hidden;
       padding: 0;
       border-radius: 0 1em 1em 0;
       max-height: 80vh;
       cursor: pointer;
     }
-    body.folded-left #container > * { pointer-events: none; }
-    body.folded-left #container::before {
-      content: 'promise';
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%) rotate(-90deg);
-      color: #fefefe;
-      font-size: 16px;
-      font-weight: bold;
-      white-space: nowrap;
-      letter-spacing: 4px;
-      opacity: 0.7;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-    }
-    body.folded-left #container::after {
-      content: '›';
-      position: absolute;
-      right: 6px;
-      bottom: 12px;
-      color: #fefefe;
-      font-size: 18px;
-      opacity: 0.5;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-    }
-    body.folded-left #container:hover {
-      background-color: rgba(254, 254, 254, 0.12);
-    }
-    body.folded-left #container:hover::before,
-    body.folded-left #container:hover::after { opacity: 1; }
+    body.folded-left #container > :not(#fold-label) { display: none; }
+    body.folded-left #fold-label { display: block; }
+    body.folded-left #container:hover { background-color: rgba(254, 254, 254, 0.15); }
+    body.folded-left #container:hover #fold-label { opacity: 1; }
     body.folded-left .fold-btn.left  { opacity: 0; pointer-events: none; }
     body.folded-left .fold-btn.right { left: 36px; right: auto; opacity: 0.6; }
 
-    /* Folded-right: card to right edge */
+    /* ====== Folded-right ====== */
     body.folded-right #container {
-      left: auto;
-      right: 0;
-      top: 50%;
+      left: auto; right: 0; top: 50%;
       transform: translate(0, -50%);
-      width: 36px;
-      min-width: 36px;
+      width: 36px; min-width: 36px;
       overflow: hidden;
       padding: 0;
       border-radius: 1em 0 0 1em;
       max-height: 80vh;
       cursor: pointer;
     }
-    body.folded-right #container > * { pointer-events: none; }
-    body.folded-right #container::before {
-      content: 'promise';
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%) rotate(-90deg);
-      color: #fefefe;
-      font-size: 16px;
-      font-weight: bold;
-      white-space: nowrap;
-      letter-spacing: 4px;
-      opacity: 0.7;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-    }
-    body.folded-right #container::after {
-      content: '‹';
-      position: absolute;
-      left: 6px;
-      bottom: 12px;
-      color: #fefefe;
-      font-size: 18px;
-      opacity: 0.5;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-    }
-    body.folded-right #container:hover {
-      background-color: rgba(254, 254, 254, 0.12);
-    }
-    body.folded-right #container:hover::before,
-    body.folded-right #container:hover::after { opacity: 1; }
+    body.folded-right #container > :not(#fold-label) { display: none; }
+    body.folded-right #fold-label { display: block; }
+    body.folded-right #container:hover { background-color: rgba(254, 254, 254, 0.15); }
+    body.folded-right #container:hover #fold-label { opacity: 1; }
     body.folded-right .fold-btn.right { opacity: 0; pointer-events: none; }
     body.folded-right .fold-btn.left  { left: auto; right: 36px; opacity: 0.6; }
 
     /* ====== Header ====== */
     #header h1 {
-      font-size: 2rem;
-      font-weight: bolder;
+      font-size: 2rem; font-weight: bolder;
       color: #fefefe;
       text-shadow: 0 1px 2px #333;
       cursor: pointer;
@@ -173,10 +125,9 @@
       letter-spacing: 0.02em;
       transition: color 0.2s;
       user-select: none;
+      -webkit-user-select: none;
     }
-    #header h1:hover {
-      color: #ccc;
-    }
+    #header h1:hover { color: #ccc; }
     #header p {
       color: #fefefe;
       text-shadow: 0 1px 1px #333;
@@ -193,38 +144,24 @@
       margin: 0.6em 0;
       transition: background 0.2s;
     }
-    #nav-links p:hover {
-      background-color: #fefefe;
-    }
-    #nav-links p:hover a {
-      color: #222;
-      text-shadow: none;
-    }
+    #nav-links p:hover { background-color: #fefefe; }
+    #nav-links p:hover a { color: #222; text-shadow: none; }
     #nav-links a {
-      color: #fefefe;
-      text-decoration: none;
+      color: #fefefe; text-decoration: none;
       text-shadow: 0 1px 1px #333;
-      font-size: 1.1rem;
-      letter-spacing: 0.02em;
+      font-size: 1.1rem; letter-spacing: 0.02em;
       transition: color 0.2s;
     }
 
     /* ====== Footer ====== */
-    #footer {
-      margin-top: 1.8em;
-    }
+    #footer { margin-top: 1.8em; }
     #footer p {
       color: #fefefe;
       text-shadow: 0 1px 1px #333;
       font-size: 0.85rem;
     }
-    #footer a {
-      color: #fefefe;
-      text-decoration: none;
-    }
-    #footer a:hover {
-      text-decoration: underline;
-    }
+    #footer a { color: #fefefe; text-decoration: none; }
+    #footer a:hover { text-decoration: underline; }
 
     /* ====== Responsive ====== */
     @media (min-width: 641px) and (max-width: 770px) {
@@ -233,32 +170,17 @@
     @media (min-width: 771px) {
       #container { min-width: 40%; max-width: 500px; }
     }
-
     @media (max-width: 640px) {
-      #container {
-        min-width: 90%;
-        padding: 1.8em 1.2em;
-      }
+      #container { min-width: 90%; padding: 1.8em 1.2em; }
       #header h1 { font-size: 1.6rem; }
       #nav-links a { font-size: 1rem; }
-
-      /* Larger touch targets + bigger vertical text on mobile */
       body.folded-left #container,
       body.folded-right #container {
-        width: 48px;
-        min-width: 48px;
-      }
-      body.folded-left #container::before,
-      body.folded-right #container::before {
-        font-size: 18px;
-        letter-spacing: 6px;
-      }
-      body.folded-left #container::after,
-      body.folded-right #container::after {
-        font-size: 22px;
+        width: 48px; min-width: 48px;
       }
       body.folded-left .fold-btn.right { left: 48px; }
       body.folded-right .fold-btn.left  { right: 48px; }
+      #fold-label { font-size: 18px; letter-spacing: 6px; }
     }
   </style>
 </head>
@@ -268,6 +190,7 @@
   <button id="fold-btn-right" class="fold-btn right" type="button" title="折叠到右边"></button>
 
   <div id="container">
+    <div id="fold-label">promise</div>
     <div id="header">
       <h1 title="点击切换背景">promise</h1>
       <p>Shall I compare thee to a summer's day?</p>

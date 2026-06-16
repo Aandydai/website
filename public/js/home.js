@@ -5,7 +5,6 @@
   var bgList = [];
   var listLoaded = false;
 
-  // Fetch image list from server proxy (cached server-side)
   function loadImageList() {
     if (listLoaded && bgList.length > 0) return Promise.resolve(bgList);
     return fetch('/api/random-bg/list')
@@ -61,7 +60,6 @@
     });
   }
 
-  // Attach to title click
   var titleEl = document.querySelector('#header h1');
   if (titleEl) {
     titleEl.addEventListener('click', function() {
@@ -79,13 +77,12 @@
     });
   }
 
-  // Init background
   loadImageList().then(function() {
     setBg(randomUrl());
     preloadNext();
   });
 
-  // ====== Fold / Unfold (directional) ======
+  // ====== Fold / Unfold ======
   var foldState = null;
   var body = document.body;
   var leftBtn = document.getElementById('fold-btn-left');
@@ -117,10 +114,10 @@
     });
   }
 
-  // Click folded bar to unfold
+  // Click folded bar (or label) to unfold
   if (container) {
-    container.addEventListener('click', function(e) {
-      if (foldState && e.target === container) {
+    container.addEventListener('click', function() {
+      if (foldState) {
         body.classList.remove('folded-left', 'folded-right');
         foldState = null;
       }
