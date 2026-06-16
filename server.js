@@ -433,14 +433,13 @@ app.post('/api/posts/:slug/verify', loginLimiter, async (req, res) => {
     const post = await get`SELECT * FROM posts WHERE slug = ${req.params.slug}`;
     if (!post || !post.password) return res.status(400).json({ error: 'No password required' });
 
-    let passwordMatch = false;
-    if (post.password.startsWith('$2a$') || post.password.startsWith('$2b$')) {
-      passwordMatch = bcrypt.compareSync(req.body.password, post.password);
-    } else {
-      // Legacy plaintext comparison (backward compatible)
-      passwordMatch = post.password === req.body.password;
+    if (!post.password.startsWith('$2a$') && !post.password.startsWith('$2b$')) {
+      // Auto-migrate legacy plaintext password to bcrypt
+      const hashed = bcrypt.hashSync(post.password, 10);
+      await run`UPDATE posts SET password = ${hashed} WHERE id = ${post.id}`;
+      post.password = hashed;
     }
-    if (!passwordMatch) {
+    if (!bcrypt.compareSync(req.body.password, post.password)) {
       return res.status(401).json({ error: 'Incorrect password' });
     }
 
@@ -697,9 +696,22 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
       return res.status(401).json({ error: 'Please complete the captcha' });
     }
 
-    // Validate TOTP
-    if (!verifyTOTP(req.body.totp)) {
-      return res.status(401).json({ error: 'Invalid verification code' });
+    // Validate TOTP or recovery code
+    const totpValid = verifyTOTP(req.body.totp);
+    let usedRecovery = false;
+    if (!totpValid) {
+      // Check recovery codes (one-time use, individually hashed)
+      const codes = await query`SELECT key, value FROM settings WHERE key LIKE 'recovery_code_%'`;
+      for (const c of codes) {
+        if (bcrypt.compareSync(req.body.totp, c.value)) {
+          usedRecovery = true;
+          await run`DELETE FROM settings WHERE key = ${c.key}`;
+          break;
+        }
+      }
+      if (!usedRecovery) {
+        return res.status(401).json({ error: 'Invalid verification code' });
+      }
     }
 
     const admin = await get`SELECT * FROM admin WHERE username = ${username}`;
@@ -708,7 +720,7 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
     }
     const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '24h', issuer: 'promise-blog', audience: 'admin' });
     setAuthCookie(res, token);
-    res.json({ success: true });
+    res.json({ success: true, recoveryUsed: usedRecovery });
   } catch (err) {
     console.error('POST /api/admin/login error:', err);
     res.status(500).json({ error: 'Server error' });
@@ -1130,6 +1142,25 @@ app.put('/api/admin/settings', requireAdmin, csrfCheck, async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('PUT /api/admin/settings error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// ========== Admin API: Generate Recovery Codes ==========
+app.post('/api/admin/recovery-codes', requireAdmin, csrfCheck, async (_req, res) => {
+  try {
+    // Clear old codes
+    await run`DELETE FROM settings WHERE key LIKE 'recovery_code_%'`;
+    const codes = [];
+    for (let i = 0; i < 8; i++) {
+      const code = crypto.randomBytes(5).toString('hex'); // 10-char hex
+      codes.push(code);
+      const hashed = bcrypt.hashSync(code, 10);
+      await run`INSERT INTO settings (key, value) VALUES (${'recovery_code_' + i}, ${hashed})`;
+    }
+    res.json({ codes });
+  } catch (err) {
+    console.error('POST /api/admin/recovery-codes error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });

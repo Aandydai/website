@@ -53,6 +53,7 @@ document.addEventListener('click', function(e) {
   if (btn.hasAttribute('data-new-category')) { openCategoryModal(); return; }
   if (btn.hasAttribute('data-save-settings')) { saveSettings(); return; }
   if (btn.hasAttribute('data-change-password')) { changePassword(); return; }
+  if (btn.hasAttribute('data-generate-recovery')) { generateRecoveryCodes(); return; }
   if (btn.hasAttribute('data-close-modal')) { closeModal(); return; }
   if (btn.hasAttribute('data-confirm-modal')) { modalConfirm(); return; }
 });
@@ -464,6 +465,19 @@ function changePassword() {
       document.getElementById('new-password').value = '';
       document.getElementById('confirm-password').value = ''; }
     else { showToast(data.error || 'Update failed'); }
+  });
+}
+
+// ========== Recovery Codes ==========
+function generateRecoveryCodes() {
+  if (!confirm('This will invalidate all existing recovery codes and generate 8 new ones. Continue?')) return;
+  fetch('/api/admin/recovery-codes', { method: 'POST' }).then(function(r) { return r.json(); }).then(function(data) {
+    if (data.codes) {
+      var el = document.getElementById('recovery-codes-list');
+      el.innerHTML = data.codes.map(function(c) { return '<div style="padding:4px 0;border-bottom:1px dotted #eee;">' + c + '</div>'; }).join('');
+      el.style.color = '#333';
+      showToast('8 recovery codes generated! Save them now — they won\'t be shown again.');
+    }
   });
 }
 

@@ -150,6 +150,7 @@
       <button class="tab-btn" data-tab="categories">Categories</button>
       <button class="tab-btn" data-tab="settings">Settings</button>
       <button class="tab-btn" data-tab="password">Password</button>
+      <button class="tab-btn" data-tab="recovery">Recovery</button>
       <button class="tab-btn" data-tab="csp">Security</button>
     </div>
 
@@ -265,6 +266,20 @@
           <input type="password" id="confirm-password" placeholder="Confirm new password">
         </div>
         <button class="btn" data-change-password>Change Password</button>
+      </div>
+    </div>
+
+    <!-- Recovery Codes -->
+    <div id="tab-recovery" class="tab-panel">
+      <div class="panel-header">
+        <h3>Recovery Codes</h3>
+        <p style="color:#888;font-size:13px;margin-top:4px;">If you lose access to your Authenticator app, use one of these codes to log in. Each code works once. Save them somewhere safe.</p>
+      </div>
+      <div style="max-width:500px;">
+        <div id="recovery-codes-list" style="background:#fafafa;border:1px dashed #ddd;border-radius:8px;padding:20px;margin:16px 0;font-family:monospace;font-size:18px;text-align:center;letter-spacing:2px;color:#999;min-height:40px;">
+          No recovery codes generated yet
+        </div>
+        <button class="btn" data-generate-recovery>Generate New Recovery Codes</button>
       </div>
     </div>
   </div>
