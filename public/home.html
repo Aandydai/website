@@ -82,6 +82,7 @@
       max-height: 80vh;
       cursor: pointer;
     }
+    body.folded-left #container > * { pointer-events: none; }
     body.folded-left #container::after {
       content: '›';
       position: absolute;
@@ -114,6 +115,7 @@
       max-height: 80vh;
       cursor: pointer;
     }
+    body.folded-right #container > * { pointer-events: none; }
     body.folded-right #container::after {
       content: '‹';
       position: absolute;
