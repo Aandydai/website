@@ -433,7 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadPosts(1);
   } else if (path === '/about') {
     loadAbout();
-  } else if (path === '/link') {
+  } else if (path === '/link' || path === '/links') {
     loadFriends();
   } else if (path === '/archive') {
     loadArchive();

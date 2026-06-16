@@ -19,44 +19,19 @@
       <label>Password</label>
       <input type="password" id="password" placeholder="Password" autocomplete="current-password">
     </div>
-    <button class="btn" style="width:100%;" onclick="handleLogin()">Login</button>
+    <div class="form-group">
+      <div id="turnstile-widget" style="display:flex;justify-content:center;margin-bottom:12px;"></div>
+    </div>
+    <div class="form-group">
+      <label>Verification Code</label>
+      <input type="text" id="totp-input" placeholder="6-digit Authenticator code" maxlength="6" style="text-align:center;font-size:18px;letter-spacing:4px;" inputmode="numeric" autocomplete="one-time-code">
+    </div>
+    <button class="btn" id="login-btn" style="width:100%;">Login</button>
     <p style="text-align:center;margin-top:16px;font-size:13px;">
       <a href="/">← Back to Home</a>
     </p>
   </div>
 
-  <script>
-    function handleLogin() {
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value;
-
-      if (!username || !password) {
-        document.getElementById('login-error').textContent = 'Please enter username and password';
-        document.getElementById('login-error').style.display = 'block';
-        return;
-      }
-
-      fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-      }).then(r => r.json()).then(data => {
-        if (data.success) {
-          window.location.href = '/admin/dashboard';
-        } else {
-          document.getElementById('login-error').textContent = data.error || 'Wrong username or password';
-          document.getElementById('login-error').style.display = 'block';
-        }
-      }).catch(() => {
-        document.getElementById('login-error').textContent = 'Login failed, please try again';
-        document.getElementById('login-error').style.display = 'block';
-      });
-    }
-
-    document.getElementById('password').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') handleLogin();
-    });
-  </script>
-
+  <script src="/js/admin.js"></script>
 </body>
 </html>

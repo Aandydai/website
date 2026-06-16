@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /link
+Allow: /archive
+Allow: /sitemap.xml
+Allow: /rss.xml
+Disallow: /admin
+Disallow: /api/
+Sitemap: https://www.daishutao.online/sitemap.xml

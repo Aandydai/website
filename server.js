@@ -317,6 +317,7 @@ app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'home.ht
 app.get('/posts', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/about', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'about.html')));
 app.get('/link', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'link.html')));
+app.get('/links', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'link.html')));
 app.get('/archive', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'archive.html')));
 app.get('/categories', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'categories.html')));
 app.get('/post/:slug', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'post.html')));

@@ -2,7 +2,10 @@ node_modules/
 .env
 uploads/
 *.sqlite
+*.db
 *.log
 .DS_Store
 npm-debug.log*
-package-lock.json
+.vercel
+
+.vercel

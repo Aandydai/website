@@ -1,0 +1,5 @@
+Contact: mailto:daishutao@outlook.com
+Expires: 2027-12-31T23:59:59Z
+Preferred-Languages: en, zh
+Canonical: https://www.daishutao.online/.well-known/security.txt
+Policy: https://www.daishutao.online/about
