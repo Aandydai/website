@@ -92,7 +92,6 @@ const upload = multer({
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
 app.use(cookieParser());
 
 // ========== Utility Functions ==========
@@ -1133,6 +1132,9 @@ app.post('/api/csp-report', (req, res) => {
   }
   res.status(204).end();
 });
+
+// ========== Static Files (after explicit routes) ==========
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ========== 404 Handler ==========
 app.use((req, res) => {
