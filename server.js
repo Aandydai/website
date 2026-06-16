@@ -80,6 +80,7 @@ app.use(helmet({
       'object-src': ["'none'"],
       'base-uri': ["'self'"],
       'form-action': ["'self'"],
+      'script-src-attr': ["'unsafe-inline'"],
       'report-uri': ['/api/csp-report'],
     }
   },
