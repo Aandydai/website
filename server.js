@@ -91,11 +91,12 @@ app.use(helmet({
   }
 }));
 
-// Permissions-Policy (removed from helmet v8, set manually)
+// Permissions-Policy & Referrer-Policy (removed from helmet v8, set manually)
 app.use((_req, res, next) => {
   res.setHeader('Permissions-Policy',
     'camera=(), microphone=(), geolocation=(), interest-cohort=()'
   );
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   next();
 });
 
