@@ -262,11 +262,18 @@ app.get('/api/admin/totp-setup', requireAdmin, async (req, res) => {
 
 // ========== Hidden Admin Entry ==========
 function hiddenAdmin(req, res, next) {
-  // If token is correct, proceed. Otherwise still show login page
-  // (the actual admin functions are protected by JWT auth)
-  if (req.query.token === ADMIN_TOKEN) return next();
-  // Wrong or missing token: still show login, just don't auto-redirect to dashboard
-  if (!req.query.token) return next();
+  // Check query token first, then fall back to cookie (set on first valid access)
+  const queryToken = req.query.token;
+  const cookieToken = req.cookies?.admin_entry_token;
+  if (queryToken === ADMIN_TOKEN) {
+    // Valid token via URL — set a persistent cookie for future visits
+    res.cookie('admin_entry_token', ADMIN_TOKEN, {
+      httpOnly: true, secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict', maxAge: 365 * 24 * 60 * 60 * 1000
+    });
+    return next();
+  }
+  if (cookieToken === ADMIN_TOKEN) return next();
   res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
 }
 
