@@ -1,68 +1,90 @@
 // ========== Home: Load post list ==========
 async function loadPosts(page = 1) {
-  const res = await fetch(`/api/posts?page=${page}`);
-  const data = await res.json();
+  try {
+    const res = await fetch(`/api/posts?page=${page}`);
+    if (!res.ok) throw new Error('Server error');
+    const data = await res.json();
 
-  const listEl = document.getElementById('post-list');
-  listEl.innerHTML = '';
+    const listEl = document.getElementById('post-list');
+    if (!listEl) return;
+    listEl.innerHTML = '';
 
-  if (data.posts.length === 0) {
-    listEl.innerHTML = '<p style="text-align:center;color:#999;padding:40px 0;">No posts yet.</p>';
-    return;
-  }
-
-  for (const post of data.posts) {
-    const item = document.createElement('div');
-    item.className = 'post-item';
-
-    if (post.hasPassword) {
-      item.innerHTML = `
-        <h2 class="post-title"><a href="/post/${post.slug}" target="_blank">${post.title}</a></h2>
-        <div class="post-meta">
-          Category: <a href="#">${post.category}</a> &nbsp;&middot;&nbsp; ${post.created_at}
-        </div>
-        <div class="post-protected">&#128274; Password protected</div>
-      `;
-    } else {
-      item.innerHTML = `
-        <h2 class="post-title"><a href="/post/${post.slug}" target="_blank">${post.title}</a></h2>
-        <div class="post-meta">
-          Category: <a href="#">${post.category}</a> &nbsp;&middot;&nbsp; ${post.created_at} &nbsp;&middot;&nbsp; <a href="/post/${post.slug}#comments">${post.comment_count || 0} comments</a>
-        </div>
-        <div class="post-preview">${escapeHtml(post.content_preview || post.content)}</div>
-      `;
+    if (!data.posts || data.posts.length === 0) {
+      listEl.innerHTML = '<p style="text-align:center;color:#999;padding:40px 0;">No posts yet.</p>';
+      renderPagination(data.page || page, data.totalPages || 1);
+      return;
     }
 
-    listEl.appendChild(item);
-  }
+    for (const post of data.posts) {
+      const item = document.createElement('div');
+      item.className = 'post-item';
 
-  renderPagination(data.page, data.totalPages);
+      if (post.hasPassword) {
+        item.innerHTML = `
+          <h2 class="post-title"><a href="/post/${post.slug}" target="_blank">${post.title}</a></h2>
+          <div class="post-meta">
+            Category: <a href="#">${post.category}</a> &nbsp;&middot;&nbsp; ${post.created_at}
+          </div>
+          <div class="post-protected">&#128274; Password protected</div>
+        `;
+      } else {
+        item.innerHTML = `
+          <h2 class="post-title"><a href="/post/${post.slug}" target="_blank">${post.title}</a></h2>
+          <div class="post-meta">
+            Category: <a href="#">${post.category}</a> &nbsp;&middot;&nbsp; ${post.created_at} &nbsp;&middot;&nbsp; <a href="/post/${post.slug}#comments">${post.comment_count || 0} comments</a>
+          </div>
+          <div class="post-preview">${escapeHtml(post.content_preview || post.content)}</div>
+        `;
+      }
+
+      listEl.appendChild(item);
+    }
+
+    renderPagination(data.page, data.totalPages);
+  } catch (err) {
+    console.error('loadPosts error:', err);
+    const listEl = document.getElementById('post-list');
+    if (listEl) {
+      listEl.innerHTML = '<p style="text-align:center;color:#c00;padding:40px 0;">Failed to load posts. Please try again.</p>';
+    }
+    const pagEl = document.getElementById('pagination');
+    if (pagEl) pagEl.innerHTML = '';
+  }
 }
 
 // ========== Render pagination ==========
 function renderPagination(current, total) {
   const pagEl = document.getElementById('pagination');
-  if (!pagEl || total <= 1) { pagEl && (pagEl.innerHTML = ''); return; }
+  if (!pagEl || total <= 1) { if (pagEl) pagEl.innerHTML = ''; return; }
 
   let html = '';
 
   if (current > 1) {
-    html += `<a href="#" onclick="loadPosts(${current - 1}); return false;">Prev</a>`;
+    html += `<a href="javascript:void(0)" data-page="${current - 1}">Prev</a>`;
   }
 
   for (let i = 1; i <= total; i++) {
     if (i === current) {
       html += `<span class="current">${i}</span>`;
     } else {
-      html += `<a href="#" onclick="loadPosts(${i}); return false;">${i}</a>`;
+      html += `<a href="javascript:void(0)" data-page="${i}">${i}</a>`;
     }
   }
 
   if (current < total) {
-    html += `<a href="#" onclick="loadPosts(${current + 1}); return false;">Next</a>`;
+    html += `<a href="javascript:void(0)" data-page="${current + 1}">Next</a>`;
   }
 
   pagEl.innerHTML = html;
+
+  // Attach event listeners (more reliable than inline onclick)
+  pagEl.querySelectorAll('a[data-page]').forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      var page = parseInt(this.getAttribute('data-page'));
+      if (page) loadPosts(page);
+    });
+  });
 }
 
 // ========== Post detail ==========
@@ -371,6 +393,13 @@ function loadFooter() {
       let html = '© promise';
       if (data.settings && data.settings.icp) {
         html += ` | <a href="https://beian.miit.gov.cn" target="_blank">${escapeHtml(data.settings.icp)}</a>`;
+      }
+      if (data.settings && data.settings.gongan) {
+        const gonganDigits = (data.settings.gongan.match(/\d+/g) || []).join('');
+        const searchUrl = gonganDigits
+          ? `https://beian.mps.gov.cn/#/query/webSearch?keyword=${gonganDigits}`
+          : 'https://beian.mps.gov.cn/#/query/webSearch';
+        html += ` | <a href="${searchUrl}" target="_blank">${escapeHtml(data.settings.gongan)}</a>`;
       }
       el.innerHTML = html;
     })
