@@ -3,8 +3,6 @@
   font-size: 16px;
   line-height: 1.6;
   color: var(--primary);
-  max-width: 820px;
-  margin: 0 auto;
 }
 .w-app * { box-sizing: border-box; }
 
