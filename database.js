@@ -86,6 +86,29 @@ async function initDatabase() {
       detail TEXT DEFAULT '',
       created_at TIMESTAMPTZ DEFAULT NOW()
     )`;
+    await sql`CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      name TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`;
+    // 写作批改记录（应用文 / 读后续写）
+    await sql`CREATE TABLE IF NOT EXISTS essays (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      user_name TEXT DEFAULT '',
+      essay_type TEXT NOT NULL,
+      question TEXT NOT NULL DEFAULT '',
+      source_text TEXT DEFAULT '',
+      prompt_openers TEXT DEFAULT '',
+      student_essay TEXT NOT NULL,
+      feedback TEXT DEFAULT '',
+      score INTEGER,
+      band TEXT DEFAULT '',
+      model TEXT DEFAULT 'deepseek-chat',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_essays_user ON essays(user_id, created_at DESC)`;
 
     // Seed admin user
     const admins = await sql`SELECT id FROM admin WHERE username = 'promise'`;

@@ -1,0 +1,7 @@
+public/textbooks
+node_modules
+.vercel
+.env*
+*.log
+data.db
+uploads

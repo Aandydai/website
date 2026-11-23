@@ -34,6 +34,18 @@ document.addEventListener('click', function(e) {
   catId = btn.getAttribute('data-delete-category');
   if (catId) { deleteCategory(parseInt(catId)); return; }
 
+  // User actions
+  var userId = btn.getAttribute('data-edit-user');
+  if (userId) { openUserEdit(parseInt(userId)); return; }
+  userId = btn.getAttribute('data-reset-user');
+  if (userId) { resetUserPassword(parseInt(userId)); return; }
+  userId = btn.getAttribute('data-delete-user');
+  if (userId) { deleteUser(parseInt(userId)); return; }
+  if (btn.hasAttribute('data-new-user')) { openAddUser(); return; }
+  if (btn.hasAttribute('data-batch-import')) { toggleBatchImport(); return; }
+  if (btn.hasAttribute('data-batch-confirm')) { confirmBatchImport(); return; }
+  if (btn.hasAttribute('data-batch-cancel')) { toggleBatchImport(); return; }
+
   // Tab switch
   var tab = btn.getAttribute('data-tab');
   if (tab) { switchTab(tab); return; }
@@ -54,6 +66,7 @@ document.addEventListener('click', function(e) {
   if (btn.hasAttribute('data-save-settings')) { saveSettings(); return; }
   if (btn.hasAttribute('data-change-password')) { changePassword(); return; }
   if (btn.hasAttribute('data-generate-recovery')) { generateRecoveryCodes(); return; }
+  if (btn.hasAttribute('data-load-totp')) { loadTotpSetup(); return; }
   if (btn.hasAttribute('data-close-modal')) { closeModal(); return; }
   if (btn.hasAttribute('data-confirm-modal')) { modalConfirm(); return; }
 });
@@ -175,6 +188,7 @@ function loadSettings() {
     .then(function(r) { return r.json(); })
     .then(function(data) {
       document.getElementById('settings-icp').value = (data.settings && data.settings.icp) ? data.settings.icp : '';
+      document.getElementById('settings-gongan').value = (data.settings && data.settings.gongan) ? data.settings.gongan : '';
     })
     .catch(function(e) { console.error('Load settings error:', e); });
 }
@@ -205,9 +219,10 @@ function loadCspReports() {
 
 function saveSettings() {
   var icp = document.getElementById('settings-icp').value.trim();
+  var gongan = document.getElementById('settings-gongan').value.trim();
   fetch('/api/admin/settings', {
     method: 'PUT', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ icp: icp })
+    body: JSON.stringify({ icp: icp, gongan: gongan })
   }).then(function(r) { return r.json(); }).then(function(data) {
     if (data.success) { showToast('Settings saved!'); } else { showToast(data.error || 'Save failed'); }
   });
@@ -223,11 +238,13 @@ function switchTab(tab) {
   var btn = document.querySelector('.tab-btn[data-tab="' + tab + '"]');
   if (btn) btn.classList.add('active');
   if (tab === 'posts') loadPostsTable();
+  if (tab === 'users') loadUsersTable();
   if (tab === 'links') loadLinksTable();
   if (tab === 'comments') loadCommentsTable();
   if (tab === 'categories') loadCategoriesTable();
   if (tab === 'settings') loadSettings();
   if (tab === 'csp') loadCspReports();
+  if (tab === 'totp') loadTotpSetup();
 }
 
 // ========== Post Modal ==========
@@ -481,6 +498,153 @@ function generateRecoveryCodes() {
   });
 }
 
+// ========== TOTP Setup ==========
+function loadTotpSetup() {
+  var qrEl = document.getElementById('totp-qr');
+  var secretEl = document.getElementById('totp-secret');
+  if (qrEl) qrEl.innerHTML = '<span style="color:#999;">Loading QR code...</span>';
+  fetch('/api/admin/totp-setup')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.qr) {
+        qrEl.innerHTML = '<img src="' + data.qr + '" alt="TOTP QR Code" style="width:220px;height:220px;">';
+      } else {
+        qrEl.innerHTML = '<span style="color:#c00;">Failed to load QR code</span>';
+      }
+      if (secretEl && data.secret) secretEl.textContent = data.secret;
+    })
+    .catch(function() {
+      if (qrEl) qrEl.innerHTML = '<span style="color:#c00;">Failed to load QR code</span>';
+    });
+}
+
+// ========== User Management ==========
+var usersList = [];
+
+function loadUsersTable() {
+  fetch('/api/admin/users')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      usersList = data.users || [];
+      var tbody = document.getElementById('users-tbody');
+      if (usersList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999;padding:24px;">暂无用户</td></tr>';
+        return;
+      }
+      tbody.innerHTML = usersList.map(function(u) {
+        return '<tr>' +
+          '<td>' + u.id + '</td>' +
+          '<td>' + escapeHtml(u.name) + '</td>' +
+          '<td>' + (u.created_at ? String(u.created_at).slice(0, 10) : '-') + '</td>' +
+          '<td>' +
+            '<button class="btn btn-sm" data-edit-user="' + u.id + '">改密码</button> ' +
+            '<button class="btn btn-sm" data-reset-user="' + u.id + '">重置</button> ' +
+            '<button class="btn btn-sm btn-danger" data-delete-user="' + u.id + '">删除</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+    })
+    .catch(function() { showToast('加载用户失败'); });
+}
+
+function findUserName(id) {
+  for (var i = 0; i < usersList.length; i++) {
+    if (usersList[i].id === id) return usersList[i].name;
+  }
+  return '';
+}
+
+function openAddUser() {
+  openModal('新增用户',
+    '<div class="modal-form">' +
+    '<div class="form-group"><label>姓名 *</label><input type="text" id="mu-name" placeholder="中文姓名"></div>' +
+    '<p style="font-size:12px;color:#999;margin:0;">密码将自动生成为姓名拼音</p>' +
+    '</div>',
+    function() {
+      var name = document.getElementById('mu-name').value.trim();
+      if (!name) { showToast('请输入姓名'); return; }
+      fetch('/api/admin/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name }) })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.success) { closeModal(); showToast('已创建，密码：' + d.password); loadUsersTable(); }
+          else { showToast(d.error || '创建失败'); }
+        })
+        .catch(function() { showToast('创建失败'); });
+    });
+}
+
+function openUserEdit(id) {
+  var name = findUserName(id);
+  openModal('编辑用户',
+    '<div class="modal-form">' +
+    '<div class="form-group"><label>姓名</label><input type="text" id="mu-name" value="' + escapeHtml(name) + '"></div>' +
+    '<div class="form-group"><label>新密码（留空则不修改）</label><input type="text" id="mu-password" placeholder="留空则不修改"></div>' +
+    '</div>',
+    function() {
+      var newName = document.getElementById('mu-name').value.trim();
+      var newPwd = document.getElementById('mu-password').value.trim();
+      fetch('/api/admin/users/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newName, password: newPwd }) })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d.success) { closeModal(); showToast('已保存'); loadUsersTable(); }
+          else { showToast(d.error || '保存失败'); }
+        })
+        .catch(function() { showToast('保存失败'); });
+    });
+}
+
+function resetUserPassword(id) {
+  if (!confirm('确定要重置该用户的密码为姓名拼音吗？')) return;
+  fetch('/api/admin/users/' + id + '/reset-password', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.success) { showToast('已重置，新密码：' + d.password); loadUsersTable(); }
+      else { showToast(d.error || '重置失败'); }
+    })
+    .catch(function() { showToast('重置失败'); });
+}
+
+function deleteUser(id) {
+  if (!confirm('确定要删除该用户吗？')) return;
+  fetch('/api/admin/users/' + id, { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.success) { showToast('已删除'); loadUsersTable(); }
+      else { showToast(d.error || '删除失败'); }
+    })
+    .catch(function() { showToast('删除失败'); });
+}
+
+function toggleBatchImport() {
+  var box = document.getElementById('batch-import-box');
+  var show = box.style.display === 'none' || box.style.display === '';
+  box.style.display = show ? 'block' : 'none';
+  if (!show) document.getElementById('batch-result').style.display = 'none';
+}
+
+function confirmBatchImport() {
+  var names = document.getElementById('batch-names').value;
+  if (!names.trim()) { showToast('请输入名单'); return; }
+  fetch('/api/admin/users/batch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ names: names }) })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (!d.success) { showToast(d.error || '导入失败'); return; }
+      var resultEl = document.getElementById('batch-result');
+      var html = '<b>成功创建 ' + d.created.length + ' 个账号：</b>';
+      d.created.forEach(function(u) {
+        html += '<div style="margin-top:4px;">' + escapeHtml(u.name) + ' — 密码：<b>' + escapeHtml(u.password) + '</b></div>';
+      });
+      if (d.skipped && d.skipped.length) {
+        html += '<div style="color:#999;margin-top:8px;">跳过（已存在）：' + d.skipped.map(escapeHtml).join('、') + '</div>';
+      }
+      resultEl.innerHTML = html;
+      resultEl.style.display = 'block';
+      document.getElementById('batch-names').value = '';
+      loadUsersTable();
+    })
+    .catch(function() { showToast('导入失败'); });
+}
+
 // ========== Logout ==========
 function handleLogout() {
   fetch('/api/admin/logout', { method: 'POST' }).then(function() { window.location.href = '/admin'; });
@@ -539,13 +703,31 @@ function insertAtCursor(ta, text) {
 function doUpload(file, type) {
   var progressEl = document.getElementById('upload-progress');
   var size = (file.size / 1024).toFixed(1);
+
+  // Client-side size check before upload (Vercel limit ~4.5MB, keep safely under)
+  var maxSize = 4.3 * 1024 * 1024; // 4.3MB
+  if (file.size > maxSize) {
+    progressEl.style.display = 'block';
+    progressEl.textContent = '✗ File too large (' + (file.size / 1024 / 1024).toFixed(1) + 'MB). Max 4MB.';
+    setTimeout(function() { progressEl.style.display = 'none'; }, 4000);
+    return;
+  }
+
   progressEl.style.display = 'block';
   progressEl.textContent = 'Uploading ' + file.name + ' (' + size + 'KB)...';
   var formData = new FormData();
   formData.append('file', file);
   fetch('/api/admin/upload', { method: 'POST', body: formData })
     .then(function(res) {
-      if (!res.ok) { return res.json().then(function(d) { throw new Error(d.error || 'Upload failed'); }); }
+      if (!res.ok) {
+        // Check if response is JSON before parsing (Vercel may return HTML error pages)
+        var contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          return res.json().then(function(d) { throw new Error(d.error || 'Upload failed'); });
+        }
+        // Non-JSON response (e.g. Vercel "Request Entity Too Large" HTML page)
+        throw new Error('Server error (file may be too large). Max 4MB.');
+      }
       return res.json();
     })
     .then(function(data) {

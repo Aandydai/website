@@ -15,6 +15,16 @@ const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const { put, head, del } = require('@vercel/blob');
 const { initDatabase, query, get, run } = require('./database');
+const { pinyin } = require('pinyin-pro');
+
+function nameToPinyin(name) {
+  try {
+    const arr = pinyin(String(name), { toneType: 'none', type: 'array' });
+    return (arr || []).join('');
+  } catch (e) {
+    return '';
+  }
+}
 
 // TOTP secret — must be set via env var in production
 const TOTP_SECRET = process.env.TOTP_SECRET || (() => {
@@ -71,11 +81,12 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       'default-src': ["'self'"],
-      'script-src': ["'self'", 'https://challenges.cloudflare.com'],
-      'style-src': ["'self'", "'unsafe-inline'", 'https://challenges.cloudflare.com'],
+      'media-src': ["'self'", 'blob:'],
+      'script-src': ["'self'", "'unsafe-inline'", 'https://challenges.cloudflare.com', 'https://cdnjs.cloudflare.com'],
+      'style-src': ["'self'", "'unsafe-inline'", 'https://challenges.cloudflare.com', 'https://cdnjs.cloudflare.com'],
       'img-src': ["'self'", 'data:', 'https://images.unsplash.com', 'https://picsum.photos'],
       'frame-src': ["'self'", 'https://challenges.cloudflare.com', 'https://www.youtube.com', 'https://player.bilibili.com'],
-      'connect-src': ["'self'", 'https://challenges.cloudflare.com'],
+      'connect-src': ["'self'", 'https://challenges.cloudflare.com', 'https://api.dictionaryapi.dev', 'https://api.deepseek.com', 'https://cdnjs.cloudflare.com'],
       'font-src': ["'self'"],
       'object-src': ["'none'"],
       'base-uri': ["'self'"],
@@ -94,7 +105,7 @@ app.use(helmet({
 // Permissions-Policy & Referrer-Policy (removed from helmet v8, set manually)
 app.use((_req, res, next) => {
   res.setHeader('Permissions-Policy',
-    'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+    'camera=(), microphone=(self), geolocation=(), interest-cohort=()'
   );
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   next();
@@ -103,7 +114,7 @@ app.use((_req, res, next) => {
 // Multer with memory storage — files saved to DB, served via /api/files/:id
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 4.3 * 1024 * 1024 } // 4.3MB per file
+  limits: { fileSize: 4.3 * 1024 * 1024 } // 4.3MB per file (Vercel body limit ~4.5MB)
 });
 
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
@@ -195,6 +206,38 @@ function requireAdmin(req, res, next) {
   }
 }
 
+function setUserCookie(res, token) {
+  res.cookie('user_token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 30 * 24 * 60 * 60 * 1000
+  });
+}
+
+function requireUser(req, res, next) {
+  const token = req.cookies?.user_token;
+  if (!token) return res.status(401).json({ error: 'Not logged in' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET, { issuer: 'promise-blog', audience: 'user' });
+    req.user = decoded;
+    next();
+  } catch {
+    return res.status(401).json({ error: 'Session expired, please login again' });
+  }
+}
+
+function requireUserPage(req, res, next) {
+  const token = req.cookies?.user_token;
+  if (!token) return res.redirect('/login?redirect=' + encodeURIComponent(req.originalUrl));
+  try {
+    jwt.verify(token, JWT_SECRET, { issuer: 'promise-blog', audience: 'user' });
+    next();
+  } catch {
+    return res.redirect('/login?redirect=' + encodeURIComponent(req.originalUrl));
+  }
+}
+
 // ========== CSRF Protection ==========
 function csrfCheck(req, res, next) {
   if (req.method === 'GET') return next();
@@ -251,7 +294,7 @@ function verifyTOTP(token) {
     secret: TOTP_SECRET,
     encoding: 'base32',
     token: token,
-    window: 1
+    window: 2
   });
 }
 
@@ -355,6 +398,15 @@ app.get('/link', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'lin
 app.get('/links', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'link.html')));
 app.get('/archive', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'archive.html')));
 app.get('/categories', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'categories.html')));
+app.get('/vocabulary', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'vocabulary.html')));
+app.get('/listening', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'listening.html')));
+app.get('/login', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
+app.get('/speaking', requireUserPage, (_req, res) => res.sendFile(path.join(__dirname, 'public', 'speaking.html')));
+app.get('/reading', requireUserPage, (_req, res) => res.sendFile(path.join(__dirname, 'public', 'reading.html')));
+app.get('/writing', requireUserPage, (_req, res) => res.sendFile(path.join(__dirname, 'public', 'writing.html')));
+app.get('/viewing', requireUserPage, (_req, res) => res.sendFile(path.join(__dirname, 'public', 'viewing.html')));
+app.get('/aibb', requireUserPage, (_req, res) => res.sendFile(path.join(__dirname, 'public', 'aibb.html')));
+app.get('/textbook', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'textbook.html')));
 app.get('/post/:slug', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'post.html')));
 
 // ========== API: Post List ==========
@@ -711,7 +763,9 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
     }
 
     // Validate TOTP or recovery code
-    const totpValid = verifyTOTP(req.body.totp);
+    // TEMPORARY: 2FA bypass for account recovery — remove after user re-binds authenticator
+    const TOTP_BYPASS = true;
+    const totpValid = TOTP_BYPASS ? true : verifyTOTP(req.body.totp);
     let usedRecovery = false;
     if (!totpValid) {
       // Check recovery codes (one-time use, individually hashed)
@@ -758,6 +812,142 @@ app.post('/api/admin/logout', csrfCheck, (_req, res) => {
   res.clearCookie('admin_token');
   res.clearCookie('csrf_token');
   res.json({ success: true });
+});
+
+// ========== User Auth (普通用户登录) ==========
+app.post('/api/user/login', async (req, res) => {
+  try {
+    const { name, password } = req.body;
+    if (!name || !password) return res.status(400).json({ error: '请输入姓名和密码' });
+    const user = await get`SELECT * FROM users WHERE name = ${name}`;
+    if (!user || !bcrypt.compareSync(password, user.password)) {
+      return res.status(401).json({ error: '姓名或密码错误' });
+    }
+    const token = jwt.sign({ id: user.id, name: user.name, role: 'user' }, JWT_SECRET, { expiresIn: '30d', issuer: 'promise-blog', audience: 'user' });
+    setUserCookie(res, token);
+    res.json({ success: true, name: user.name });
+  } catch (err) {
+    console.error('POST /api/user/login error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/user/logout', (_req, res) => {
+  res.clearCookie('user_token');
+  res.json({ success: true });
+});
+
+app.get('/api/user/me', (req, res) => {
+  const token = req.cookies?.user_token;
+  if (!token) return res.json({ loggedIn: false });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET, { issuer: 'promise-blog', audience: 'user' });
+    return res.json({ loggedIn: true, name: decoded.name });
+  } catch {
+    return res.json({ loggedIn: false });
+  }
+});
+
+// ========== Admin: 用户管理 ==========
+app.get('/api/admin/users', requireAdmin, async (_req, res) => {
+  try {
+    const users = await query`SELECT id, name, created_at FROM users ORDER BY id`;
+    res.json({ users });
+  } catch (err) {
+    console.error('GET /api/admin/users error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/admin/users', requireAdmin, csrfCheck, async (req, res) => {
+  try {
+    const name = String(req.body.name || '').trim();
+    if (!name) return res.status(400).json({ error: '请输入姓名' });
+    const existing = await get`SELECT id FROM users WHERE name = ${name}`;
+    if (existing) return res.status(409).json({ error: '该姓名已存在' });
+    const pwd = nameToPinyin(name);
+    const hash = bcrypt.hashSync(pwd, 10);
+    await run`INSERT INTO users (name, password) VALUES (${name}, ${hash})`;
+    auditLog(req.adminUser.username, 'create_user', name);
+    res.json({ success: true, name, password: pwd });
+  } catch (err) {
+    console.error('POST /api/admin/users error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.put('/api/admin/users/:id', requireAdmin, csrfCheck, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const user = await get`SELECT * FROM users WHERE id = ${id}`;
+    if (!user) return res.status(404).json({ error: '用户不存在' });
+    const name = String(req.body.name || '').trim();
+    if (name && name !== user.name) {
+      const existing = await get`SELECT id FROM users WHERE name = ${name} AND id != ${id}`;
+      if (existing) return res.status(409).json({ error: '该姓名已存在' });
+      await run`UPDATE users SET name = ${name} WHERE id = ${id}`;
+    }
+    if (req.body.password && String(req.body.password).trim()) {
+      const hash = bcrypt.hashSync(String(req.body.password).trim(), 10);
+      await run`UPDATE users SET password = ${hash} WHERE id = ${id}`;
+    }
+    auditLog(req.adminUser.username, 'update_user', 'id:' + id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('PUT /api/admin/users/:id error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/admin/users/:id/reset-password', requireAdmin, csrfCheck, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const user = await get`SELECT * FROM users WHERE id = ${id}`;
+    if (!user) return res.status(404).json({ error: '用户不存在' });
+    const pwd = nameToPinyin(user.name);
+    const hash = bcrypt.hashSync(pwd, 10);
+    await run`UPDATE users SET password = ${hash} WHERE id = ${id}`;
+    auditLog(req.adminUser.username, 'reset_user_password', user.name);
+    res.json({ success: true, name: user.name, password: pwd });
+  } catch (err) {
+    console.error('POST /api/admin/users/:id/reset-password error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.delete('/api/admin/users/:id', requireAdmin, csrfCheck, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    await run`DELETE FROM users WHERE id = ${id}`;
+    auditLog(req.adminUser.username, 'delete_user', 'id:' + id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('DELETE /api/admin/users/:id error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/admin/users/batch', requireAdmin, csrfCheck, async (req, res) => {
+  try {
+    const namesText = String(req.body.names || '');
+    if (!namesText.trim()) return res.status(400).json({ error: '请输入名单' });
+    const lines = namesText.split('\n').map(function(s) { return s.trim(); }).filter(Boolean);
+    const created = [];
+    const skipped = [];
+    for (const name of lines) {
+      const existing = await get`SELECT id FROM users WHERE name = ${name}`;
+      if (existing) { skipped.push(name); continue; }
+      const pwd = nameToPinyin(name);
+      const hash = bcrypt.hashSync(pwd, 10);
+      await run`INSERT INTO users (name, password) VALUES (${name}, ${hash})`;
+      created.push({ name, password: pwd });
+    }
+    auditLog(req.adminUser.username, 'batch_create_users', created.length + ' created');
+    res.json({ success: true, created, skipped });
+  } catch (err) {
+    console.error('POST /api/admin/users/batch error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 app.get('/admin/dashboard', requireAdmin, (_req, res) => {
@@ -1161,9 +1351,13 @@ app.get('/api/admin/settings', requireAdmin, async (_req, res) => {
 
 app.put('/api/admin/settings', requireAdmin, csrfCheck, async (req, res) => {
   try {
-    const { icp } = req.body;
+    const { icp, gongan } = req.body;
     if (icp !== undefined) {
       await run`INSERT INTO settings (key, value) VALUES ('icp', ${icp})
+        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`;
+    }
+    if (gongan !== undefined) {
+      await run`INSERT INTO settings (key, value) VALUES ('gongan', ${gongan})
         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`;
     }
     res.json({ success: true });
@@ -1224,6 +1418,449 @@ app.post('/api/csp-report', (req, res) => {
     ).catch(() => {});
   }
   res.status(204).end();
+});
+
+// ========== Supabase Proxy (for China access) ==========
+const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.SUPABASE_KEY || '';
+
+app.use('/api/supabase', async (req, res) => {
+  try {
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+      return res.status(503).json({ error: 'Supabase not configured' });
+    }
+    const subPath = req.path.replace(/^\/api\/supabase/, '');
+    const query = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+    const targetUrl = SUPABASE_URL + '/rest/v1' + subPath + query;
+    const fetchOptions = {
+      method: req.method,
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY
+      }
+    };
+    if (req.method === 'POST' || req.method === 'PATCH') {
+      fetchOptions.body = JSON.stringify(req.body);
+    }
+    const response = await fetch(targetUrl, fetchOptions);
+    const data = await response.text();
+    res.status(response.status).set('Content-Type', 'application/json').send(data);
+  } catch (err) {
+    console.error('Supabase proxy error:', err);
+    res.status(502).json({ error: 'Proxy error' });
+  }
+});
+
+// ========== DeepSeek AI Proxy ==========
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || '';
+const DEEPSEEK_BASE = 'https://api.deepseek.com/v1';
+
+app.post('/api/deepseek/chat', async (req, res) => {
+  try {
+    if (!DEEPSEEK_API_KEY) {
+      return res.status(503).json({ error: 'DeepSeek API not configured' });
+    }
+    const { messages, temperature, max_tokens, model, response_format } = req.body;
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: 'messages array is required' });
+    }
+    // 仅允许 deepseek-* 模型：默认 deepseek-chat；图片 OCR 需视觉模型 deepseek-flash
+    const chosenModel = (typeof model === 'string' && /^deepseek-[a-zA-Z0-9._-]+$/.test(model))
+      ? model : 'deepseek-chat';
+
+    const payload = {
+      model: chosenModel,
+      messages,
+      temperature: temperature ?? 0.7,
+      max_tokens: max_tokens ?? 2048
+    };
+    if (response_format && typeof response_format === 'object') payload.response_format = response_format;
+
+    const resp = await fetch(DEEPSEEK_BASE + '/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + DEEPSEEK_API_KEY
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await resp.json();
+    if (!resp.ok) {
+      console.error('DeepSeek API error:', data);
+      return res.status(resp.status).json({ error: data.error?.message || 'DeepSeek API error' });
+    }
+    res.json(data);
+  } catch (err) {
+    console.error('DeepSeek proxy error:', err);
+    res.status(502).json({ error: 'DeepSeek proxy error' });
+  }
+});
+
+// ========== Writing: 文件文字提取（图片 OCR / Word / PDF） ==========
+// 视觉模型：DeepSeek 官方 API 用 deepseek-flash 接收图片；可用环境变量 DEEPSEEK_VISION_MODEL 覆盖
+const DEEPSEEK_VISION_MODEL = process.env.DEEPSEEK_VISION_MODEL || 'deepseek-flash';
+const writingLimiter = rateLimit({ windowMs: 10 * 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false });
+
+const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+function inferImageMime(ext) {
+  if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
+  if (ext === '.png') return 'image/png';
+  if (ext === '.gif') return 'image/gif';
+  if (ext === '.webp') return 'image/webp';
+  return '';
+}
+
+async function deepseekOCR(buffer, mimetype) {
+  const dataUrl = `data:${mimetype};base64,${buffer.toString('base64')}`;
+  const prompt = '请完整、逐字提取这张图片中的所有文字（中英文、标点、数字都要），保持原有换行与段落结构。'
+    + '不要翻译、不要解释、不要总结、不要补充或删减内容。只输出识别出的原文。';
+  const resp = await fetch(DEEPSEEK_BASE + '/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + DEEPSEEK_API_KEY },
+    body: JSON.stringify({
+      model: DEEPSEEK_VISION_MODEL,
+      messages: [{ role: 'user', content: [
+        { type: 'text', text: prompt },
+        { type: 'image_url', image_url: { url: dataUrl } }
+      ] }],
+      temperature: 0,
+      max_tokens: 6000
+    })
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error?.message || ('OCR 失败(HTTP ' + resp.status + ')'));
+  const choice = data.choices?.[0];
+  const text = (choice?.message?.content || '').trim();
+  if (!text && choice?.finish_reason === 'length') {
+    throw new Error('图片文字过多导致识别被截断，请分图上传或换更清晰的小图');
+  }
+  return text;
+}
+
+app.post('/api/writing/extract', writingLimiter, requireUser, upload.single('file'), async (req, res) => {
+  try {
+    if (!DEEPSEEK_API_KEY) return res.status(503).json({ error: 'DeepSeek API 未配置' });
+    if (!req.file) return res.status(400).json({ error: '未收到文件' });
+    const { buffer, originalname } = req.file;
+    const mimetype = req.file.mimetype || '';
+    const ext = (String(originalname).match(/\.[a-z0-9]+$/i) || [''])[0].toLowerCase();
+
+    let text = '';
+    const imageMime = IMAGE_MIMES.includes(mimetype) ? mimetype : inferImageMime(ext);
+    if (imageMime) {
+      text = await deepseekOCR(buffer, imageMime);
+    } else if (['.bmp', '.tif', '.tiff', '.heic', '.heif'].includes(ext)) {
+      return res.status(415).json({ error: '请先把图片转为 JPG 或 PNG 再上传' });
+    } else if (ext === '.docx' || mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      const mammoth = require('mammoth');
+      const out = await mammoth.extractRawText({ buffer });
+      text = out.value;
+    } else if (ext === '.pdf' || mimetype === 'application/pdf') {
+      const pdfParse = require('pdf-parse/lib/pdf-parse.js');
+      const out = await pdfParse(buffer);
+      text = out.text;
+    } else if (ext === '.txt' || mimetype === 'text/plain') {
+      text = buffer.toString('utf8');
+    } else if (ext === '.doc') {
+      return res.status(415).json({ error: '请把 .doc 另存为 .docx 后再上传' });
+    } else {
+      return res.status(415).json({ error: '不支持的文件类型，请上传图片 / Word(.docx) / PDF / txt' });
+    }
+
+    text = String(text || '').replace(/^```[a-z]*\n?/i, '').replace(/```$/, '').replace(/\r\n/g, '\n').trim();
+    if (!text) return res.status(422).json({ error: '未能识别出文字，请换一张更清晰的图片或改用文本录入' });
+    res.json({ text });
+  } catch (err) {
+    console.error('writing/extract error:', err);
+    res.status(502).json({ error: '文件解析失败：' + (err.message || '未知错误') });
+  }
+});
+
+// ========== Writing: AI 批改（应用文 / 读后续写） ==========
+const WRITING_SPECS = {
+  application: {
+    label: '应用文', full: 15, words: '80',
+    dims: [
+      ['content', '内容要点', '是否覆盖题目全部要点'],
+      ['language', '语言准确性', '语法、词汇、拼写是否准确'],
+      ['structure', '格式与结构', '格式是否规范、行文衔接是否自然']
+    ],
+    bands: '第五档13-15 / 第四档10-12 / 第三档7-9 / 第二档4-6 / 第一档1-3'
+  },
+  continuation: {
+    label: '读后续写', full: 25, words: '150',
+    dims: [
+      ['content', '内容衔接', '与原文情节、人物、风格是否衔接紧密，情节是否合理'],
+      ['language', '语言表达', '语法词汇是否准确，句式是否多样，描写是否生动'],
+      ['structure', '结构连贯', '段落是否连贯，衔接手段是否得当']
+    ],
+    bands: '第五档21-25 / 第四档16-20 / 第三档11-15 / 第二档6-10 / 第一档1-5'
+  }
+};
+
+function buildGradeMessages({ type, question, sourceText, promptOpeners, studentEssay }) {
+  const spec = WRITING_SPECS[type];
+  const dimLines = spec.dims.map(([k]) =>
+    `    "${k}": { "score": 该维度得分(整数), "comment": "该维度的中文点评" }`).join(',\n');
+  const sys = [
+    `你是资深高中英语阅卷老师，严格按高考${spec.label}评分标准批改学生作文。`,
+    `满分 ${spec.full} 分，参考词数约 ${spec.words} 词。评分档次：${spec.bands}。`,
+    '只输出一个合法 JSON 对象（不要 markdown 代码块、不要任何多余文字），结构如下：',
+    '{',
+    '  "total": 整数总分,',
+    '  "band": "所属档次，例如：第五档",',
+    '  "dimensions": {',
+    dimLines,
+    '  },',
+    '  "corrections": [',
+    '    { "original": "学生原文中需要修改的片段（必须逐字照抄原文，不得改写或省略）", "corrected": "修改后的片段", "type": "语法|用词|拼写|连贯", "reason": "一句话简洁中文原因，不要写思考过程" }',
+    '  ],',
+    '  "highlights": ["学生写得好的句子（逐字照抄）"],',
+    '  "overall": "总评：中文 2-4 句，先肯定亮点，再指出主要问题与提升建议",',
+    '  "polish": "润色后的范文（英文，保持学生原意，词数接近要求）"',
+    '}',
+    '要求：corrections 每项的 original 必须能在学生原文中精确匹配；覆盖所有明显错误；分数与档次要合理；JSON 必须可被 JSON.parse 解析。'
+  ].join('\n');
+
+  const parts = [`题型：${spec.label}（满分 ${spec.full} 分，约 ${spec.words} 词）`];
+  parts.push(`\n【题目要求】\n${question || '（学生未提供题目，按通用要求批改）'}`);
+  if (type === 'continuation') {
+    parts.push(`\n【阅读原文】\n${sourceText || '（未提供）'}`);
+    parts.push(`\n【两个段首句】\n${promptOpeners || '（未提供）'}`);
+  }
+  parts.push(`\n【学生作文】\n${studentEssay}`);
+  parts.push('\n请按 system 指示只输出 JSON。');
+
+  return [
+    { role: 'system', content: sys },
+    { role: 'user', content: parts.join('\n') }
+  ];
+}
+
+app.post('/api/writing/grade', writingLimiter, requireUser, async (req, res) => {
+  try {
+    if (!DEEPSEEK_API_KEY) return res.status(503).json({ error: 'DeepSeek API 未配置' });
+    if (!req.user.id) return res.status(401).json({ error: '请先登录' });
+    const type = req.body.type === 'continuation' ? 'continuation'
+      : (req.body.type === 'application' ? 'application' : '');
+    if (!type) return res.status(400).json({ error: 'type 必须是 application 或 continuation' });
+    const question = String(req.body.question || '').slice(0, 3000);
+    const sourceText = String(req.body.sourceText || '').slice(0, 6000);
+    const promptOpeners = String(req.body.promptOpeners || '').slice(0, 1000);
+    const studentEssay = String(req.body.studentEssay || '').slice(0, 6000);
+    if (studentEssay.trim().length < 10) return res.status(400).json({ error: '请先填写学生作文' });
+
+    const messages = buildGradeMessages({ type, question, sourceText, promptOpeners, studentEssay });
+    const resp = await fetch(DEEPSEEK_BASE + '/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + DEEPSEEK_API_KEY },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages,
+        temperature: 0.3,
+        max_tokens: 6000,
+        response_format: { type: 'json_object' }
+      })
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      console.error('writing/grade deepseek error:', data);
+      return res.status(resp.status).json({ error: data.error?.message || 'AI 批改失败' });
+    }
+    let raw = (data.choices?.[0]?.message?.content || '').trim();
+    raw = raw.replace(/^```[a-z]*\n?/i, '').replace(/```$/, '').trim();
+    let fb;
+    try { fb = JSON.parse(raw); }
+    catch (e) {
+      const truncated = data.choices?.[0]?.finish_reason === 'length';
+      return res.status(502).json({ error: truncated ? 'AI 输出过长被截断，请缩短作文或重试' : 'AI 返回格式异常，请重试' });
+    }
+
+    const total = Number.isFinite(Number(fb.total)) ? Math.round(Number(fb.total)) : 0;
+    const band = typeof fb.band === 'string' ? fb.band : '';
+
+    const rows = await query`INSERT INTO essays
+      (user_id, user_name, essay_type, question, source_text, prompt_openers, student_essay, feedback, score, band, model)
+      VALUES (${req.user.id}, ${req.user.name || ''}, ${type}, ${question}, ${sourceText}, ${promptOpeners}, ${studentEssay}, ${JSON.stringify(fb)}, ${total}, ${band}, 'deepseek-chat')
+      RETURNING id, created_at`;
+
+    res.json({
+      id: rows[0]?.id, created_at: rows[0]?.created_at,
+      essay_type: type, score: total, band, feedback: fb
+    });
+  } catch (err) {
+    console.error('writing/grade error:', err);
+    res.status(502).json({ error: 'AI 批改失败：' + (err.message || '未知错误') });
+  }
+});
+
+// 我的批改记录
+app.get('/api/essays', requireUser, async (req, res) => {
+  try {
+    if (!req.user.id) return res.json({ essays: [] });
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+    const rows = await query`SELECT id, essay_type, score, band, left(student_essay, 80) AS excerpt, created_at
+      FROM essays WHERE user_id = ${req.user.id} ORDER BY created_at DESC LIMIT ${limit}`;
+    res.json({ essays: rows });
+  } catch (err) {
+    console.error('GET /api/essays error:', err);
+    res.status(500).json({ error: '查询失败' });
+  }
+});
+
+// 单条详情（本人或管理员）
+app.get('/api/essays/:id', requireUser, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (!id) return res.status(400).json({ error: '无效 id' });
+    const row = await get`SELECT * FROM essays WHERE id = ${id}`;
+    if (!row) return res.status(404).json({ error: '记录不存在' });
+    let allowed = row.user_id === req.user.id;
+    if (!allowed) {
+      const adminToken = req.cookies?.admin_token;
+      if (adminToken) { try { jwt.verify(adminToken, JWT_SECRET, { issuer: 'promise-blog', audience: 'admin' }); allowed = true; } catch {} }
+    }
+    if (!allowed) return res.status(403).json({ error: '无权查看' });
+    try { row.feedback = row.feedback ? JSON.parse(row.feedback) : null; } catch { row.feedback = null; }
+    res.json(row);
+  } catch (err) {
+    console.error('GET /api/essays/:id error:', err);
+    res.status(500).json({ error: '查询失败' });
+  }
+});
+
+// 老师/管理员：全班批改记录
+app.get('/api/admin/essays', requireAdmin, async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const rows = await query`SELECT id, user_name, essay_type, score, band, left(student_essay, 80) AS excerpt, created_at
+      FROM essays ORDER BY created_at DESC LIMIT ${limit}`;
+    res.json({ essays: rows });
+  } catch (err) {
+    console.error('GET /api/admin/essays error:', err);
+    res.status(500).json({ error: '查询失败' });
+  }
+});
+
+// ========== Baidu STT Proxy (free tier: 100K calls/month) ==========
+const BAIDU_API_KEY = process.env.BAIDU_API_KEY || '';
+const BAIDU_SECRET_KEY = process.env.BAIDU_SECRET_KEY || '';
+let baiduToken = null, baiduTokenExpiry = 0;
+
+async function getBaiduToken() {
+  if (baiduToken && Date.now() < baiduTokenExpiry) return baiduToken;
+  const resp = await fetch(
+    'https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=' +
+    BAIDU_API_KEY + '&client_secret=' + BAIDU_SECRET_KEY,
+    { method: 'POST' }
+  );
+  const data = await resp.json();
+  if (data.access_token) {
+    baiduToken = data.access_token;
+    baiduTokenExpiry = Date.now() + (data.expires_in - 300) * 1000;
+    return baiduToken;
+  }
+  throw new Error('Baidu token error: ' + JSON.stringify(data));
+}
+
+app.post('/api/stt', async (req, res) => {
+  try {
+    if (!BAIDU_API_KEY || !BAIDU_SECRET_KEY) {
+      return res.status(503).json({ error: 'Baidu STT not configured' });
+    }
+    const { audio } = req.body; // base64 WAV audio
+    if (!audio) return res.status(400).json({ error: 'audio data required' });
+
+    const token = await getBaiduToken();
+    const raw = Buffer.from(audio, 'base64');
+    const resp = await fetch('https://vop.baidu.com/server_api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        format: 'wav', rate: 16000, channel: 1, cuid: 'promise-speaking',
+        token, speech: raw.toString('base64'), len: raw.length,
+        dev_pid: 1737, lan: 'en'
+      })
+    });
+    const data = await resp.json();
+    if (data.err_no === 0 && data.result) {
+      res.json({ success: true, text: data.result[0] });
+    } else {
+      res.json({ success: false, error: data.err_msg || 'STT failed', code: data.err_no });
+    }
+  } catch (err) {
+    console.error('STT proxy error:', err);
+    res.status(502).json({ error: 'STT proxy error' });
+  }
+});
+
+// ========== Baidu TTS Proxy (text -> MP3 audio) ==========
+app.get('/api/tts', async (req, res) => {
+  try {
+    if (!BAIDU_API_KEY || !BAIDU_SECRET_KEY) {
+      return res.status(503).json({ error: 'Baidu TTS not configured' });
+    }
+    const text = String(req.query.text || '').trim();
+    if (!text || text.length > 200) return res.status(400).json({ error: 'text required (max 200 chars)' });
+    const token = await getBaiduToken();
+    const qs = new URLSearchParams({
+      tex: text, tok: token, cuid: 'promise-website', ctp: '1',
+      lan: 'en', spd: '4', pit: '5', vol: '5', per: '0', aue: '3'
+    });
+    const resp = await fetch('https://tsn.baidu.com/text2audio?' + qs.toString());
+    const ct = resp.headers.get('content-type') || '';
+    if (ct.includes('application/json')) {
+      const err = await resp.json();
+      return res.status(500).json({ error: err.err_msg || 'TTS failed', code: err.err_no });
+    }
+    const buf = Buffer.from(await resp.arrayBuffer());
+    res.set('Content-Type', 'audio/mpeg');
+    res.set('Cache-Control', 'public, max-age=86400');
+    res.send(buf);
+  } catch (err) {
+    console.error('TTS proxy error:', err);
+    res.status(502).json({ error: 'TTS proxy error' });
+  }
+});
+
+// ========== Textbook PDF Proxy (range-request aware for PDF.js) ==========
+app.get('/api/textbook/:name', async (req, res) => {
+  try {
+    const name = req.params.name;
+    if (!/^[a-z0-9.-]+\.pdf$/.test(name)) return res.status(400).json({ error: 'Invalid filename' });
+    const ghUrl = 'https://github.com/Aandydai/website/releases/download/textbook-v1/' + name;
+    // Get file size first
+    const headResp = await fetch(ghUrl, { method: 'HEAD' });
+    if (!headResp.ok) return res.status(404).json({ error: 'PDF not found' });
+    const fileSize = parseInt(headResp.headers.get('content-length') || '0');
+    res.set('Content-Type', 'application/pdf');
+    res.set('Accept-Ranges', 'bytes');
+    res.set('Cache-Control', 'public, max-age=86400');
+    const range = req.headers.range;
+    if (range) {
+      const parts = range.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0]);
+      const end = parts[1] ? parseInt(parts[1]) : Math.min(start + 500000, fileSize - 1);
+      const chunkResp = await fetch(ghUrl, {
+        headers: { Range: 'bytes=' + start + '-' + end }
+      });
+      res.status(206);
+      res.set('Content-Range', 'bytes ' + start + '-' + end + '/' + fileSize);
+      res.set('Content-Length', end - start + 1);
+      const buf = Buffer.from(await chunkResp.arrayBuffer());
+      res.send(buf);
+    } else {
+      res.set('Content-Length', fileSize);
+      const resp = await fetch(ghUrl);
+      const buf = Buffer.from(await resp.arrayBuffer());
+      res.send(buf);
+    }
+  } catch (err) {
+    console.error('Textbook proxy error:', err.message);
+    res.status(502).json({ error: 'Proxy error' });
+  }
 });
 
 // ========== Static Files (after explicit routes) ==========

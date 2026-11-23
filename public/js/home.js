@@ -114,6 +114,30 @@
     });
   }
 
+  // ====== Beian Bar ======
+  (function loadBeian() {
+    var bar = document.getElementById('beian-bar');
+    if (!bar) return;
+    fetch('/api/settings')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var s = data.settings || {};
+        var parts = [];
+        if (s.icp) {
+          parts.push('<a href="https://beian.miit.gov.cn" target="_blank">' + s.icp + '</a>');
+        }
+        if (s.gongan) {
+          var digits = (s.gongan.match(/\d+/g) || []).join('');
+          var searchUrl = digits
+            ? 'https://beian.mps.gov.cn/#/query/webSearch?keyword=' + digits
+            : 'https://beian.mps.gov.cn/#/query/webSearch';
+          parts.push('<a href="' + searchUrl + '" target="_blank">' + s.gongan + '</a>');
+        }
+        bar.innerHTML = parts.join('<span class="sep">|</span>');
+      })
+      .catch(function() {});
+  })();
+
   // Click folded bar (or label) to unfold
   if (container) {
     container.addEventListener('click', function() {

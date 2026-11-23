@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Shadow Textbook — promise</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+:root {
+  --bg:#fff; --bg2:#f8f9fa; --bg3:#e9ecef; --text:#1a1a2e; --text2:#495057; --text3:#868e96;
+  --accent:#e17055; --accent2:#fab1a0; --accent3:#ffe8e0; --ok:#00b894;
+  --pink:#fd79a8; --blue:#0984e3; --gold:#f39c12;
+  --shadow:0 1px 6px rgba(0,0,0,.05); --r:10px; --rs:6px;
+  --font:'Segoe UI',system-ui,-apple-system,'Microsoft YaHei',sans-serif; --t:.2s ease;
+}
+[data-theme="dark"] {
+  --bg:#1a1a2e; --bg2:#16213e; --bg3:#0f3460; --text:#eaeaea; --text2:#a0a0b0; --text3:#6c6c80;
+  --accent:#fab1a0; --accent2:#e17055; --accent3:#3d2018; --shadow:0 1px 6px rgba(0,0,0,.3);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;transition:background var(--t),color var(--t)}
+.header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--bg3);flex-shrink:0;gap:8px}
+.header-left{display:flex;align-items:center;gap:10px}
+.home-link{text-decoration:none;font-size:12px;font-weight:600;color:var(--text2);padding:5px 10px;border-radius:var(--rs);transition:all var(--t);display:flex;align-items:center;gap:4px;border:1px solid var(--bg3);white-space:nowrap}
+.home-link:hover{color:var(--accent);border-color:var(--accent);background:var(--accent3)}
+.icon-btn{width:30px;height:30px;border-radius:50%;border:none;background:var(--bg3);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all var(--t);color:var(--text)}
+.icon-btn:hover{background:var(--accent3)}
+
+.main{flex:1;overflow:hidden;display:flex;padding:8px 16px;gap:8px}
+
+/* Sidebar */
+.sidebar{width:260px;flex-shrink:0;display:flex;flex-direction:column;gap:6px;overflow-y:auto;padding-right:4px}
+.sidebar::-webkit-scrollbar{width:3px}.sidebar::-webkit-scrollbar-thumb{background:transparent;border-radius:2px}.sidebar:hover::-webkit-scrollbar-thumb{background:var(--bg3)}
+
+.level-tabs{display:flex;gap:3px;background:var(--bg2);border-radius:var(--r);padding:3px;flex-shrink:0}
+.level-tab{padding:6px 0;flex:1;border:none;border-radius:var(--rs);cursor:pointer;font-size:11px;font-weight:700;background:transparent;color:var(--text2);transition:all var(--t);font-family:var(--font);text-align:center}
+.level-tab.active{color:#fff}
+.level-tab.primary.active{background:var(--pink)}
+.level-tab.junior.active{background:var(--blue)}
+.level-tab.senior.active{background:var(--gold)}
+.level-tab:hover:not(.active){color:var(--text)}
+
+.book-item{padding:8px 10px;background:var(--bg2);border-radius:var(--rs);cursor:pointer;font-size:11px;line-height:1.4;transition:all var(--t);border-left:3px solid transparent;word-break:break-all}
+.book-item:hover{border-left-color:var(--accent2);background:var(--bg)}
+.book-item.active{border-left-color:var(--accent);background:var(--accent3);font-weight:600}
+.book-item .grade{font-size:10px;color:var(--text3)}
+
+/* Viewer */
+.viewer{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
+.viewer-toolbar{display:flex;align-items:center;justify-content:center;gap:6px;padding:4px 0;flex-shrink:0;font-size:12px;flex-wrap:wrap}
+.viewer-toolbar button{padding:4px 8px;border:1px solid var(--bg3);border-radius:var(--rs);background:var(--bg2);cursor:pointer;font-size:11px;color:var(--text);font-family:var(--font);white-space:nowrap}
+.viewer-toolbar button:hover{border-color:var(--accent);color:var(--accent)}
+.viewer-toolbar button:disabled{opacity:.3;cursor:not-allowed}
+.viewer-toolbar .page-num{font-weight:600;min-width:60px;text-align:center}
+.viewer-canvas{flex:1;overflow:auto;display:flex;justify-content:center;background:var(--bg2);border-radius:var(--r);padding:8px}
+.viewer-canvas::-webkit-scrollbar{width:4px}
+.viewer-canvas::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
+.viewer-canvas canvas{max-width:100%;height:auto;box-shadow:0 2px 16px rgba(0,0,0,.1);border-radius:4px}
+.viewer-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:14px;background:var(--bg2);border-radius:var(--r)}
+
+/* Fullscreen — Adobe Acrobat style */
+.fullscreen-active .header{display:none}
+.fullscreen-active .main{padding:0}
+.fullscreen-active .sidebar{display:none}
+.fullscreen-active .viewer{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:9999;background:#1a1a1a}
+.fullscreen-active .viewer-canvas{background:#1a1a1a;display:flex;align-items:flex-start;justify-content:center;padding:0}
+.fullscreen-active .viewer-canvas canvas{box-shadow:0 4px 32px rgba(0,0,0,.5)}
+.fullscreen-active .viewer-toolbar{position:fixed;bottom:5px;left:50%;transform:translateX(-50%);z-index:10000;background:rgba(255,255,255,.1);border-radius:20px;padding:6px 10px;gap:6px;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.fullscreen-active .viewer-toolbar button{background:transparent;border:none;color:#222;font-size:12px;padding:4px 8px}
+.fullscreen-active .viewer-toolbar button:hover{color:#000}
+.fullscreen-active .viewer-toolbar .page-num{color:#222;font-size:12px}
+.fullscreen-active .viewer-toolbar #btnFullscreen{background:rgba(0,0,0,.08);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center}
+.fullscreen-active .viewer-empty,.fullscreen-active .disclaimer{display:none}
+
+@media(max-width:700px){
+  .main{flex-direction:column;padding:6px 10px;gap:4px}
+  .sidebar{width:100%;flex-shrink:0;max-height:200px}
+  .viewer{flex:1}
+  .viewer-toolbar{gap:3px;padding:2px 0}
+  .viewer-toolbar button{padding:3px 6px;font-size:10px}
+  .viewer-toolbar .page-num{min-width:40px;font-size:10px}
+  #pageJump{width:30px!important;font-size:10px!important}
+  #btnGo{padding:2px 4px!important;font-size:9px!important}
+}
+@media(max-width:400px){
+  .viewer-toolbar button{padding:2px 5px;font-size:9px}
+  .viewer-toolbar{gap:2px}
+}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-left">
+    <a href="/posts" class="home-link">← Posts</a>
+    <a href="/speaking" class="home-link" style="margin-left:4px">📖 Speaking</a>
+  </div>
+  <button class="icon-btn" id="darkToggle" title="Toggle dark mode">🌓</button>
+</header>
+
+<main class="main">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="level-tabs">
+      <button class="level-tab primary active" data-level="primary">🏫 小学</button>
+      <button class="level-tab junior" data-level="junior">📚 初中</button>
+      <button class="level-tab senior" data-level="senior">🎓 高中</button>
+    </div>
+    <div id="bookList"></div>
+  </div>
+
+  <!-- PDF Viewer -->
+  <div class="viewer" id="viewer">
+    <div class="viewer-toolbar" id="toolbar" style="display:none">
+      <button id="btnPrev">◀ Prev</button>
+      <span class="page-num" id="pageNum">— / —</span>
+      <button id="btnNext">Next ▶</button>
+      <input type="number" id="pageJump" min="1" placeholder="#" style="width:38px;padding:2px 4px;border:1px solid var(--bg3);border-radius:4px 0 0 4px;text-align:center;font-size:11px;font-family:var(--font);background:transparent;color:var(--text)">
+      <button id="btnGo" style="padding:2px 6px;border:1px solid var(--bg3);border-left:0;border-radius:0 4px 4px 0;background:transparent;cursor:pointer;font-size:10px;color:var(--text)">Go</button>
+      <span style="color:var(--text3)">|</span>
+      <button id="btnZoomOut">−</button>
+      <span id="zoomLevel" style="min-width:36px;text-align:center">100%</span>
+      <button id="btnZoomIn">+</button>
+      <span style="color:var(--text3)">|</span>
+      <button id="btnFullscreen" title="Fullscreen">⛶</button>
+    </div>
+    <div class="viewer-canvas" id="canvasContainer"></div>
+    <div class="viewer-empty" id="viewerEmpty">📚 Select a textbook from the left to start reading</div>
+    <div class="disclaimer" style="text-align:center;font-size:10px;color:var(--text3);padding:4px 0;flex-shrink:0">教材资源来自国家中小学智慧教育平台，仅供学习参考</div>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+// Theme
+(function(){if(localStorage.getItem('theme')==='dark')document.documentElement.dataset.theme='dark'})();
+var dk=document.getElementById('darkToggle');dk.textContent=document.documentElement.dataset.theme==='dark'?'☀':'🌙';dk.addEventListener('click',function(){var n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('theme',n);this.textContent=n==='dark'?'☀':'🌙'});
+
+// PDF.js setup
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// Book data
+var BASE='/api/textbook/';
+var BOOKS={
+  primary:[
+    {file:BASE+'pep-primary-3a.pdf',label:'三年级 上册',grade:'Grade 3A'},
+    {file:BASE+'pep-primary-3b.pdf',label:'三年级 下册',grade:'Grade 3B'},
+    {file:BASE+'pep-primary-4a.pdf',label:'四年级 上册 (PEP)',grade:'Grade 4A'},
+    {file:BASE+'pep-primary-4b.pdf',label:'四年级 下册',grade:'Grade 4B'},
+    {file:BASE+'pep-primary-5a.pdf',label:'五年级 上册 (PEP)',grade:'Grade 5A'},
+    {file:BASE+'pep-primary-5b.pdf',label:'五年级 下册',grade:'Grade 5B'},
+    {file:BASE+'pep-primary-6a.pdf',label:'六年级 上册 (PEP)',grade:'Grade 6A'},
+    {file:BASE+'pep-primary-6b.pdf',label:'六年级 下册',grade:'Grade 6B'}
+  ],
+  junior:[
+    {file:BASE+'pep-junior-7a.pdf',label:'七年级 上册',grade:'Grade 7A'},
+    {file:BASE+'pep-junior-7b.pdf',label:'七年级 下册',grade:'Grade 7B'},
+    {file:BASE+'pep-junior-8a.pdf',label:'八年级 上册',grade:'Grade 8A'},
+    {file:BASE+'pep-junior-8b.pdf',label:'八年级 下册',grade:'Grade 8B'},
+    {file:BASE+'pep-junior-9.pdf',label:'九年级 全一册',grade:'Grade 9'}
+  ],
+  senior:[
+    {file:BASE+'pep-senior-b1.pdf',label:'必修 第一册',grade:'Required 1'},
+    {file:BASE+'pep-senior-b2.pdf',label:'必修 第二册',grade:'Required 2'},
+    {file:BASE+'pep-senior-b3.pdf',label:'必修 第三册',grade:'Required 3'},
+    {file:BASE+'pep-senior-x1.pdf',label:'选择性必修 第一册',grade:'Elective 1'},
+    {file:BASE+'pep-senior-x2.pdf',label:'选择性必修 第二册',grade:'Elective 2'},
+    {file:BASE+'pep-senior-x3.pdf',label:'选择性必修 第三册',grade:'Elective 3'},
+    {file:BASE+'pep-senior-x4.pdf',label:'选择性必修 第四册',grade:'Elective 4'}
+  ]
+};
+
+var state={level:'primary',book:null,pdfDoc:null,page:1,scale:1.5,totalPages:0};
+
+function renderBookList(){
+  var books=BOOKS[state.level],html='';
+  for(var i=0;i<books.length;i++){
+    var b=books[i],isActive=state.book&&state.book.file===b.file;
+    html+='<div class="book-item'+(isActive?' active':'')+'" data-idx="'+i+'"><div>'+b.label+'</div><div class="grade">'+b.grade+'</div></div>';
+  }
+  document.getElementById('bookList').innerHTML=html;
+  document.querySelectorAll('.book-item').forEach(function(el){el.addEventListener('click',function(){var b=BOOKS[state.level][parseInt(this.dataset.idx)];state.book=b;state.page=1;renderBookList();loadPDF(b.file)})});
+}
+
+document.querySelectorAll('.level-tab').forEach(function(t){t.addEventListener('click',function(){
+  document.querySelectorAll('.level-tab').forEach(function(x){x.classList.remove('active')});this.classList.add('active');
+  state.level=this.dataset.level;state.book=null;state.pdfDoc=null;
+  document.getElementById('canvasContainer').innerHTML='';
+  document.getElementById('toolbar').style.display='none';
+  document.getElementById('viewerEmpty').style.display='';
+  renderBookList();
+})});
+
+renderBookList();
+
+// PDF.js
+async function loadPDF(url){
+  document.getElementById('viewerEmpty').style.display='none';
+  document.getElementById('canvasContainer').innerHTML='<div style="padding:40px;text-align:center;color:var(--text3)">Loading PDF...</div>';
+  try{
+    var pdf=await pdfjsLib.getDocument(url).promise;
+    state.pdfDoc=pdf;state.totalPages=pdf.numPages;state.page=1;
+    document.getElementById('toolbar').style.display='';
+    document.getElementById('pageJump').max=state.totalPages;
+    document.getElementById('pageJump').placeholder='1-'+state.totalPages;
+    updatePageNum();
+    renderPage();
+  }catch(e){
+    console.error('PDF load error:',e);
+    document.getElementById('canvasContainer').innerHTML='<div style="padding:40px;text-align:center;color:var(--err)">Failed to load: '+url+'<br><small>'+e.message+'</small></div>';
+  }
+}
+
+async function renderPage(){
+  if(!state.pdfDoc)return;
+  var page=await state.pdfDoc.getPage(state.page);
+  var viewport=page.getViewport({scale:state.scale});
+  var canvas=document.createElement('canvas');
+  var ctx=canvas.getContext('2d');
+  canvas.width=viewport.width;canvas.height=viewport.height;
+  document.getElementById('canvasContainer').innerHTML='';
+  document.getElementById('canvasContainer').appendChild(canvas);
+  await page.render({canvasContext:ctx,viewport:viewport}).promise;
+  updatePageNum();
+}
+
+function updatePageNum(){
+  document.getElementById('pageNum').textContent=state.page+' / '+state.totalPages;
+  document.getElementById('btnPrev').disabled=state.page<=1;
+  document.getElementById('btnNext').disabled=state.page>=state.totalPages;
+  document.getElementById('zoomLevel').textContent=Math.round(state.scale*100)+'%';
+}
+
+document.getElementById('btnPrev').addEventListener('click',function(){if(state.page>1){state.page--;renderPage()}});
+// Page jump
+function doJump(){
+  var inp=document.getElementById('pageJump'),n=parseInt(inp.value);inp.value='';
+  if(n>=1&&n<=state.totalPages){state.page=n;renderPage()}
+}
+document.getElementById('pageJump').addEventListener('keydown',function(e){if(e.key==='Enter')doJump()});
+document.getElementById('btnGo').addEventListener('click',doJump);
+document.getElementById('pageJump').addEventListener('change',function(){
+  var n=parseInt(this.value);this.value='';
+  if(n>=1&&n<=state.totalPages){state.page=n;renderPage()}
+});
+document.getElementById('btnNext').addEventListener('click',function(){if(state.page<state.totalPages){state.page++;renderPage()}});
+document.getElementById('btnZoomIn').addEventListener('click',function(){state.scale=Math.min(3,state.scale+.25);renderPage()});
+document.getElementById('btnZoomOut').addEventListener('click',function(){state.scale=Math.max(.5,state.scale-.25);renderPage()});
+
+// Fullscreen — Adobe Acrobat style
+document.getElementById('btnFullscreen').addEventListener('click',function(){
+  var isFS=document.body.classList.toggle('fullscreen-active');
+  document.getElementById('btnFullscreen').textContent=isFS?'✕':'⛶';
+  if(state.pdfDoc)renderPage();
+});
+
+// Auto page-turn via wheel event (reliable, no scroll position glitches)
+var _turnTimer=null;
+document.getElementById('canvasContainer').addEventListener('wheel',function(e){
+  if(!state.pdfDoc||_turnTimer)return;
+  var el=this;
+  var atBottom=state.page<state.totalPages&&el.scrollHeight-el.scrollTop-el.clientHeight<20;
+  var atTop=state.page>1&&el.scrollTop<20;
+  if(e.deltaY>0&&atBottom){ // scrolling down, at bottom → next page
+    e.preventDefault();
+    _turnTimer=setTimeout(function(){_turnTimer=null},1000);
+    state.page++;
+    renderPage().then(function(){el.scrollTop=0});
+  }else if(e.deltaY<0&&atTop){ // scrolling up, at top → prev page
+    e.preventDefault();
+    _turnTimer=setTimeout(function(){_turnTimer=null},1000);
+    state.page--;
+    renderPage().then(function(){el.scrollTop=el.scrollHeight});
+  }
+},{passive:false});
+
+// Keyboard nav
+document.addEventListener('keydown',function(e){
+  if(!state.pdfDoc)return;
+  if(e.key==='ArrowLeft'){if(state.page>1){state.page--;renderPage()}}
+  else if(e.key==='ArrowRight'){if(state.page<state.totalPages){state.page++;renderPage()}}
+  else if(e.key==='Escape'){
+    if(document.body.classList.contains('fullscreen-active')){
+      document.body.classList.remove('fullscreen-active');
+      document.getElementById('btnFullscreen').textContent='⛶';
+      if(state.pdfDoc)renderPage();
+    }
+  }
+});
+</script>
+</body>
+</html>

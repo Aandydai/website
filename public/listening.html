@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Listening — promise</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+:root {
+  --bg:#fff; --bg2:#f8f9fa; --bg3:#e9ecef; --text:#1a1a2e; --text2:#495057; --text3:#868e96;
+  --accent:#6c5ce7; --accent2:#a29bfe; --accent3:#e8e5ff; --ok:#00b894; --err:#e17055; --warn:#fdcb6e;
+  --pink:#fd79a8; --blue:#0984e3; --gold:#f39c12; --shadow:0 1px 6px rgba(0,0,0,.05); --r:10px; --rs:6px;
+  --font:'Segoe UI',system-ui,-apple-system,'Microsoft YaHei',sans-serif; --t:.2s ease;
+}
+[data-theme="dark"] {
+  --bg:#1a1a2e; --bg2:#16213e; --bg3:#0f3460; --text:#eaeaea; --text2:#a0a0b0; --text3:#6c6c80;
+  --accent:#a29bfe; --accent2:#6c5ce7; --accent3:#2d2b55; --shadow:0 1px 6px rgba(0,0,0,.3);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;transition:background var(--t),color var(--t)}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--bg3);flex-shrink:0;gap:8px}
+.home-link{text-decoration:none;font-size:12px;font-weight:600;color:var(--text2);padding:5px 10px;border-radius:var(--rs);transition:all var(--t);display:flex;align-items:center;gap:4px;border:1px solid var(--bg3);white-space:nowrap}
+.home-link:hover{color:var(--accent);border-color:var(--accent);background:var(--accent3)}
+.level-tabs{display:flex;gap:3px;background:var(--bg3);border-radius:var(--r);padding:3px;flex-shrink:0}
+.level-tab{padding:6px 14px;border:none;border-radius:var(--rs);cursor:pointer;font-size:12px;font-weight:700;background:transparent;color:var(--text2);transition:all var(--t);font-family:var(--font);white-space:nowrap}
+.level-tab.elem.active{background:var(--pink);color:#fff}
+.level-tab.mid.active{background:var(--blue);color:#fff}
+.level-tab.high.active{background:var(--gold);color:#fff}
+.icon-btn{width:30px;height:30px;border-radius:50%;border:none;background:var(--bg3);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all var(--t);color:var(--text)}
+.icon-btn:hover{background:var(--accent3)}
+
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column;padding:8px 16px;gap:6px}
+
+/* Toolbar */
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0;font-size:12px}
+.toolbar .st{display:flex;align-items:baseline;gap:3px;font-weight:600}
+.toolbar .stv{color:var(--accent);font-size:15px;font-weight:800}
+.toolbar .stl{color:var(--text3);font-size:10px}
+.toolbar select{font-family:var(--font);font-size:11px;padding:4px 7px;border-radius:var(--rs);border:1px solid var(--bg3);background:var(--bg);color:var(--text);cursor:pointer}
+
+/* Mode tabs */
+.mode-tabs{display:flex;gap:3px;flex-shrink:0;align-self:center}
+.mode-tab{padding:7px 12px;border:none;border-radius:var(--rs);cursor:pointer;font-size:12px;font-weight:600;background:var(--bg2);color:var(--text2);transition:all var(--t);font-family:var(--font);white-space:nowrap}
+.mode-tab.active{background:var(--accent);color:#fff}
+.mode-tab:hover:not(.active){color:var(--text)}
+
+/* Content */
+.content{flex:1;overflow-y:auto;overflow-x:hidden;background:var(--bg2);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px;min-height:0}
+.content::-webkit-scrollbar{width:4px}
+.content::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
+
+/* Shared */
+.btn{padding:7px 14px;border:none;border-radius:var(--rs);cursor:pointer;font-size:12px;font-weight:600;transition:all var(--t);font-family:var(--font)}
+.btn-a{background:var(--accent);color:#fff}.btn-a:hover{background:var(--accent2)}
+.btn-o{background:transparent;border:2px solid var(--bg3);color:var(--text)}.btn-o:hover{border-color:var(--accent);color:var(--accent)}
+.btn-s{padding:5px 10px;font-size:11px}
+.btn-play{width:42px;height:42px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:17px;cursor:pointer;transition:all var(--t);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn-play:hover{transform:scale(1.08)}
+.btn-play.live{background:var(--warn);color:#333;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 var(--accent2)}50%{box-shadow:0 0 18px 3px var(--accent2)}}
+.loading{display:inline-block;width:14px;height:14px;border:2px solid var(--bg3);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Feedback */
+.fb{font-size:12px;line-height:1.5;padding:10px;border-radius:var(--rs);display:none}
+.fb.show{display:block}.fb.g{background:#e6fff8;color:#007a5e}.fb.m{background:#fff9e6;color:#856404}.fb.b{background:#fff0ed;color:#c0392b}
+
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.center{justify-content:center}
+.grow{flex:1;min-width:0}
+.vbox{display:flex;flex-direction:column;gap:8px}
+
+/* ====== 听音选图 ====== */
+.pic-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start}
+.pic-card{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;background:var(--bg);border:3px solid var(--bg3);border-radius:var(--r);cursor:pointer;transition:all var(--t);font-size:48px;gap:6px}
+.pic-card:hover{border-color:var(--accent2);transform:translateY(-2px)}
+.pic-card.sel{border-color:var(--accent);background:var(--accent3)}
+.pic-card.ok{border-color:var(--ok);background:#e6fff8}
+.pic-card.ng{border-color:var(--err);background:#fff0ed}
+.pic-card .pic-label{font-size:13px;font-weight:600;color:var(--text2)}
+.pic-card .pic-emoji{transition:transform .3s}
+.pic-card:hover .pic-emoji{transform:scale(1.2)}
+
+/* ====== 字母单词听写 ====== */
+.dict-word{font-size:clamp(22px,4vw,32px);text-align:center;padding:16px 24px;background:var(--bg);border-radius:var(--r);letter-spacing:3px;min-height:48px;display:flex;align-items:center;justify-content:center;transition:all var(--t);word-break:break-word}
+.dict-word.ok{border:2px solid var(--ok);background:#e6fff8}
+.dict-word.ng{border:2px solid var(--err);background:#fff0ed}
+.dict-word.live{border:2px solid var(--accent);animation:pulse 1.2s infinite}
+.input-row{display:flex;gap:8px}
+.input-row input{flex:1;padding:10px 14px;border:2px solid var(--bg3);border-radius:var(--rs);font-size:15px;background:var(--bg);color:var(--text);font-family:var(--font);min-width:0}
+.input-row input:focus{outline:none;border-color:var(--accent)}
+.level-row{display:flex;gap:6px;flex-wrap:wrap}
+
+/* ====== TPR ====== */
+.tpr-card{text-align:center;padding:24px;background:var(--bg);border-radius:var(--r);flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.tpr-emoji{font-size:64px;animation:bounce .6s infinite alternate}
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-15px)}}
+.tpr-cmd{font-size:clamp(18px,3vw,26px);font-weight:700;letter-spacing:1px}
+.tpr-timer{font-size:36px;font-weight:800;color:var(--accent)}
+.tpr-count{font-size:14px;color:var(--text3)}
+
+/* ====== 中考/高考 MCQ ====== */
+.mcq-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1;min-height:0}
+.mcq-grid .passage{grid-column:1/-1;font-size:13px;line-height:1.6;padding:12px;background:var(--bg);border-radius:var(--r);max-height:130px;overflow-y:auto;flex-shrink:0}
+.mcq-q{font-weight:700;font-size:12px;margin-bottom:3px}
+.mcq-opts{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.mcq-opt{padding:8px 12px;background:var(--bg);border:2px solid var(--bg3);border-radius:var(--rs);cursor:pointer;font-size:12px;transition:all var(--t);text-align:left}
+.mcq-opt:hover{border-color:var(--accent2)}
+.mcq-opt.sel{border-color:var(--accent);background:var(--accent3)}
+.mcq-opt.correct{border-color:var(--ok);background:#e6fff8}
+.mcq-opt.wrong{border-color:var(--err);background:#fff0ed}
+.mcq-opt:disabled{pointer-events:none;opacity:.8}
+
+/* ====== 关键词抓取 ====== */
+.kw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;flex-shrink:0}
+.kw-item{display:flex;flex-direction:column;gap:3px}
+.kw-label{font-size:11px;font-weight:700;color:var(--accent)}
+.kw-item input{padding:8px 10px;border:2px solid var(--bg3);border-radius:var(--rs);font-size:13px;background:var(--bg);color:var(--text);font-family:var(--font)}
+.kw-item input:focus{outline:none;border-color:var(--accent)}
+.kw-item input.ok{border-color:var(--ok);background:#e6fff8}
+.kw-item input.ng{border-color:var(--err);background:#fff0ed}
+
+/* ====== 推理判断 ====== */
+.infer-card{font-size:15px;padding:16px;background:var(--bg);border-radius:var(--r);line-height:1.6;text-align:center;flex-shrink:0}
+.infer-card .quote{font-size:18px;font-style:italic;font-weight:600;margin-bottom:8px}
+
+/* ====== 新闻听力 ====== */
+.who-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex-shrink:0}
+.who-item{display:flex;flex-direction:column;gap:3px}
+.who-item label{font-size:11px;font-weight:700;color:var(--accent)}
+.who-item input{padding:7px 10px;border:2px solid var(--bg3);border-radius:var(--rs);font-size:12px;background:var(--bg);color:var(--text);font-family:var(--font)}
+.who-item input:focus{outline:none;border-color:var(--accent)}
+
+/* Timer bar */
+.timer-bar{height:3px;background:var(--bg3);border-radius:2px;flex-shrink:0;overflow:hidden}
+.timer-fill{height:100%;background:var(--accent);transition:width 1s linear;border-radius:2px}
+.timer-fill.warn{background:var(--warn)}
+.timer-fill.urgent{background:var(--err)}
+
+@media (max-width:600px){
+  .main{padding:6px 10px;gap:4px}
+  .content{padding:10px}
+  .pic-grid{grid-template-columns:1fr 1fr;gap:6px}
+  .pic-card{font-size:36px;padding:12px}
+  .mcq-grid{grid-template-columns:1fr}
+  .who-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <a href="/posts" class="home-link">← Posts</a>
+  <div class="level-tabs">
+    <button class="level-tab elem active" data-level="elem">🏫 小学</button>
+    <button class="level-tab mid" data-level="mid">📚 初中</button>
+    <button class="level-tab high" data-level="high">🎓 高中</button>
+  </div>
+  <button class="icon-btn" id="darkToggle" title="Toggle dark mode">🌓</button>
+</header>
+
+<main class="main">
+
+  <!-- Toolbar -->
+  <div class="toolbar" style="justify-content:space-between">
+    <div class="row">
+      <div class="st"><span class="stv" id="totalScore">0</span>&nbsp;<span class="stl">Pts</span></div>
+      <div class="st"><span class="stv" id="streakCount">0</span>&nbsp;<span class="stl">🔥Streak</span></div>
+      <div class="st"><span class="stv" id="accuracyRate">—</span>&nbsp;<span class="stl">Acc</span></div>
+      <div class="st"><span class="stv" id="roundCount">0</span>&nbsp;<span class="stl">Rounds</span></div>
+    </div>
+    <div class="row">
+      <select id="voiceSelect" style="font-size:11px;max-width:180px"></select>
+      <span id="speedInfo" style="font-size:11px;color:var(--text3);display:none"></span>
+    </div>
+  </div>
+
+  <!-- Mode tabs: filled dynamically -->
+  <div class="mode-tabs" id="modeTabs"></div>
+
+  <!-- Timer bar -->
+  <div class="timer-bar" id="timerBar" style="display:none"><div class="timer-fill" id="timerFill"></div></div>
+
+  <!-- Content -->
+  <div class="content" id="content"></div>
+
+</main>
+
+<script>
+// ==================== THEME & STATE ====================
+(function(){const s=localStorage.getItem('theme');if(s==='dark')document.documentElement.dataset.theme='dark';})();
+const dt=document.getElementById('darkToggle');dt.textContent=document.documentElement.dataset.theme==='dark'?'☀':'🌙';dt.addEventListener('click',function(){const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('theme',n);this.textContent=n==='dark'?'☀':'🌙'});
+
+const S={level:'elem',mode:'',totalScore:0,streak:0,correct:0,wrong:0,rounds:0,voice:null,timer:null};
+(function(){try{const j=JSON.parse(localStorage.getItem('ls2-state')||'{}');if(j.s)S.totalScore=j.s;if(j.c)S.correct=j.c;if(j.w)S.wrong=j.w;if(j.r)S.rounds=j.r}catch(e){}})();
+function sv(){try{localStorage.setItem('ls2-state',JSON.stringify({s:S.totalScore,c:S.correct,w:S.wrong,r:S.rounds}))}catch(e){}}
+function ui(){document.getElementById('totalScore').textContent=S.totalScore;document.getElementById('streakCount').textContent=S.streak;document.getElementById('accuracyRate').textContent=S.correct+S.wrong>0?Math.round(S.correct/(S.correct+S.wrong)*100)+'%':'—';document.getElementById('roundCount').textContent=S.rounds}
+
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+async function gv(){return new Promise(function(r){if(!window.speechSynthesis){r([]);return}let v=speechSynthesis.getVoices();if(v.length){r(v);return}let done=false;speechSynthesis.onvoiceschanged=function(){if(!done){done=true;r(speechSynthesis.getVoices())}};setTimeout(function(){if(!done){done=true;r(speechSynthesis.getVoices())}},800)})}
+async function iv(){const vl=await gv(),en=vl.filter(function(v){return v.lang.startsWith('en')}),s=document.getElementById('voiceSelect');s.innerHTML='';if(!en.length){s.innerHTML='<option>Default</option>';return}const p=['Google US English','Microsoft David','Microsoft Zira','Samantha','Alex','Karen','Google UK English Female','Google UK English Male'];en.sort(function(a,b){const ai=p.findIndex(function(x){return a.name.includes(x)}),bi=p.findIndex(function(x){return b.name.includes(x)});if(ai>=0&&bi<0)return -1;if(bi>=0&&ai<0)return 1;if(ai>=0&&bi>=0)return ai-bi;return a.name.localeCompare(b.name)});en.forEach(function(v){const o=document.createElement('option');o.value=v.name;o.textContent=v.name.substring(0,35)+' ('+v.lang+')';s.appendChild(o)});S.voice=en[0]}
+iv();document.getElementById('voiceSelect').addEventListener('change',async function(){const vl=await gv();S.voice=vl.find(function(v){return v.name===this.value})||vl[0]});
+var _ttsAudio=null;
+function serverSpeak(tx){return new Promise(function(r){if(_ttsAudio){try{_ttsAudio.pause()}catch(e){}}_ttsAudio=new Audio('/api/tts?text='+encodeURIComponent(tx));_ttsAudio.onended=r;_ttsAudio.onerror=r;_ttsAudio.play().catch(r)})}
+async function speak(tx,sp){const vl=await gv(),en=vl.find(function(x){return x.lang&&x.lang.startsWith('en')});if(!en)return serverSpeak(tx);return new Promise(function(r){const v=S.voice||en,u=new SpeechSynthesisUtterance(tx);u.voice=v;u.rate=sp||1;u.onend=r;u.onerror=r;speechSynthesis.speak(u)})}
+async function dspeak(tx,sp){const vl=await gv(),en=vl.find(function(x){return x.lang&&x.lang.startsWith('en')});if(!en){serverSpeak(tx);return}const v=S.voice||en,u=new SpeechSynthesisUtterance(tx);u.voice=v;u.rate=sp||1;speechSynthesis.speak(u)}
+
+ui();
+
+// ==================== LEVEL / MODE ROUTING ====================
+const MODES={
+  elem:[
+    {id:'pic',name:'🎨 听音选图',desc:'Listen & pick the correct picture'},
+    {id:'spell',name:'🔤 字母单词听写',desc:'Letter & word dictation'},
+    {id:'tpr',name:'🎮 TPR 听指令',desc:'Listen and perform the action'}
+  ],
+  mid:[
+    {id:'mexam',name:'📋 中考模拟',desc:'Middle school entrance exam practice'},
+    {id:'keyw',name:'🎯 关键词抓取',desc:'Keyword capture from broadcasts'},
+    {id:'school',name:'🏫 校园场景',desc:'School scenario conversations'}
+  ],
+  high:[
+    {id:'hexam',name:'🎙️ 高考模拟',desc:'College entrance exam simulation'},
+    {id:'infer',name:'🗣️ 推理判断',desc:'Inference & attitude judgment'},
+    {id:'news',name:'📰 新闻听力',desc:'News listening comprehension'}
+  ]
+};
+
+function renderModes(){
+  const modes=MODES[S.level];S.mode=modes[0].id;
+  document.getElementById('modeTabs').innerHTML=modes.map(function(m,i){return'<button class="mode-tab'+(i===0?' active':'')+'" data-mode="'+m.id+'">'+m.name+'</button>'}).join('');
+  document.querySelectorAll('.mode-tab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.mode-tab').forEach(function(x){x.classList.remove('active')});this.classList.add('active');S.mode=this.dataset.mode;load()})});
+  load();
+}
+
+document.querySelectorAll('.level-tab').forEach(function(t){t.addEventListener('click',function(){
+  document.querySelectorAll('.level-tab').forEach(function(x){x.classList.remove('active')});this.classList.add('active');S.level=this.dataset.level;renderModes();
+  const cl=this.dataset.level==='elem'?'elem':this.dataset.level==='mid'?'mid':'high';
+  document.querySelectorAll('.level-tab').forEach(function(x){x.className='level-tab '+x.dataset.level});this.classList.add('active');
+})});
+
+// ==================== MODE CONTENT RENDERERS ====================
+function load(){const m=S.mode;document.getElementById('timerBar').style.display='none';clearTimer();
+  if(m==='pic')loadPic();else if(m==='spell')loadSpell();else if(m==='tpr')loadTPR();
+  else if(m==='mexam')loadMidExam();else if(m==='keyw')loadKeyW();else if(m==='school')loadSchool();
+  else if(m==='hexam')loadHighExam();else if(m==='infer')loadInfer();else if(m==='news')loadNews();
+}
+
+function ctx(){return document.getElementById('content')}
+
+// ==================== 🎨 听音选图 (小学) ====================
+const PIC_DATA={animals:[
+  {e:'🐱',w:'cat'},{e:'🐶',w:'dog'},{e:'🐰',w:'rabbit'},{e:'🐻',w:'bear'},{e:'🐘',w:'elephant'},{e:'🦁',w:'lion'},{e:'🐵',w:'monkey'},{e:'🐸',w:'frog'},{e:'🐔',w:'chicken'},{e:'🦆',w:'duck'},{e:'🐟',w:'fish'},{e:'🐦',w:'bird'},{e:'🐴',w:'horse'},{e:'🐮',w:'cow'},{e:'🐷',w:'pig'}
+],food:[
+  {e:'🍎',w:'apple'},{e:'🍌',w:'banana'},{e:'🍊',w:'orange'},{e:'🍇',w:'grapes'},{e:'🍕',w:'pizza'},{e:'🍔',w:'hamburger'},{e:'🍰',w:'cake'},{e:'🍞',w:'bread'},{e:'🥛',w:'milk'},{e:'🧀',w:'cheese'},{e:'🍪',w:'cookie'},{e:'🍦',w:'ice cream'}
+],objects:[
+  {e:'📚',w:'book'},{e:'✏️',w:'pencil'},{e:'🎒',w:'backpack'},{e:'🚪',w:'door'},{e:'📱',w:'phone'},{e:'⌚',w:'watch'},{e:'🪑',w:'chair'},{e:'🛏️',w:'bed'},{e:'🚗',w:'car'},{e:'🚌',w:'bus'},{e:'🏀',w:'basketball'},{e:'⚽',w:'football'}
+],actions:[
+  {e:'🏃',w:'running'},{e:'🏊',w:'swimming'},{e:'🚴',w:'cycling'},{e:'🎸',w:'guitar'},{e:'🎹',w:'piano'},{e:'💃',w:'dancing'},{e:'🎨',w:'painting'},{e:'📖',w:'reading'},{e:'✍️',w:'writing'},{e:'🍳',w:'cooking'}
+],body:[
+  {e:'👀',w:'eyes'},{e:'👃',w:'nose'},{e:'👄',w:'mouth'},{e:'👂',w:'ears'},{e:'✋',w:'hands'},{e:'🦶',w:'feet'},{e:'💪',w:'arms'},{e:'🦵',w:'legs'}
+]};
+let picQ=null,picCorrect=0,picTotal=0;
+
+function loadPic(){
+  const cats=Object.keys(PIC_DATA);const cat=cats[Math.floor(Math.random()*cats.length)];const pool=PIC_DATA[cat].slice();pool.sort(function(){return Math.random()-.5});const opts=pool.slice(0,4);picQ={options:opts,answer:opts[Math.floor(Math.random()*4)],category:cat};
+  ctx().innerHTML=
+    '<div style="font-size:12px;font-weight:600;color:var(--text2)">Category: '+picQ.category+' &nbsp;|&nbsp; '+picCorrect+'/'+picTotal+' correct</div>'+
+    '<div class="pic-grid">'+picQ.options.map(function(o,i){return'<div class="pic-card" data-idx="'+i+'"><span class="pic-emoji">'+o.e+'</span><span class="pic-label" style="display:none">'+o.w+'</span></div>'}).join('')+'</div>'+
+    '<div class="row center"><button class="btn-play" id="picPlay">▶</button><span style="font-size:11px;color:var(--text3)">Click ▶ to hear the word</span></div>'+
+    '<div class="fb" id="picFb"></div><button class="btn btn-o" id="picNext" style="display:none;width:100%">Next →</button>';
+  document.getElementById('picPlay').addEventListener('click',function(){this.classList.add('live');dspeak(picQ.answer.w);setTimeout(function(){document.getElementById('picPlay').classList.remove('live')},1000)});
+  document.querySelectorAll('.pic-card').forEach(function(c){c.addEventListener('click',function(){if(this.classList.contains('ok')||this.classList.contains('ng'))return;pTotal();handlePic(parseInt(this.dataset.idx))})});
+  document.getElementById('picNext').addEventListener('click',loadPic);
+}
+
+function pTotal(){picTotal++;S.rounds++;ui();sv()}
+function handlePic(idx){
+  const cards=document.querySelectorAll('.pic-card');const fb=document.getElementById('picFb');const correct=picQ.options.indexOf(picQ.answer);cards.forEach(function(c,i){c.classList.remove('sel');if(i===correct)c.classList.add('ok');if(i===idx&&idx!==correct)c.classList.add('ng');c.style.pointerEvents='none'});cards[correct].querySelector('.pic-label').style.display='';const ok=idx===correct;
+  if(ok){picCorrect++;S.correct++;S.streak++;S.totalScore+=5;fb.className='fb g show';fb.innerHTML='✅ <b>Correct!</b> That is '+esc(picQ.answer.w)}
+  else{S.wrong++;S.streak=0;fb.className='fb b show';fb.innerHTML='❌ <b>Wrong!</b> That was <b>'+esc(picQ.answer.w)+'</b>. The correct answer is highlighted.'}
+  document.getElementById('picNext').style.display='';ui();sv();
+}
+
+// ==================== 🔤 字母单词听写 (小学) ====================
+const SPELL_DATA={L1:'abcdefghijklmnopqrstuvwxyz'.split('').map(function(l){return{l:l.toUpperCase(),t:'letter'}}),
+L2:['cat','dog','sun','run','big','red','hot','cup','bed','hat','pen','box','map','bus','egg','fox','hat','jam','key','leg'].map(function(w){return{l:w,t:'word'}}),
+L3:['apple','banana','rabbit','monkey','flower','school','family','pencil','window','garden','purple','orange','market','kitchen'].map(function(w){return{l:w,t:'word'}}),
+L4:['I like dogs','She is happy','We go to school','He has a red ball','The cat is sleepy','My mom is kind','It is a sunny day','They are good friends','I want some water','The bird can sing'].map(function(w){return{l:w,t:'sentence'}})};
+let spellLevel='L1',spellQ=null;
+
+function loadSpell(){
+  const pool=SPELL_DATA[spellLevel];spellQ=pool[Math.floor(Math.random()*pool.length)];
+  ctx().innerHTML=
+    '<div class="row"><span style="font-size:12px;font-weight:600;color:var(--text2)">Spelling Practice</span><div class="level-row">'+['L1','L2','L3','L4'].map(function(l){return'<button class="btn btn-s '+(l===spellLevel?'btn-a':'btn-o')+'" data-l="'+l+'">'+l+'</button>'}).join('')+'</div><span style="font-size:10px;color:var(--text3)">Type: '+spellQ.t+'</span></div>'+
+    '<div class="dict-word" id="spellWord">Press ▶ to start</div>'+
+    '<div class="row center"><button class="btn-play" id="spellPlay">▶</button><span style="font-size:11px;color:var(--text3)">Listen & type what you hear</span></div>'+
+    '<div class="input-row"><input type="text" id="spellInput" placeholder="Type here..." autocomplete="off" autofocus><button class="btn btn-a" id="spellSubmit">Submit</button></div>'+
+    '<div class="fb" id="spellFb"></div><button class="btn btn-o" id="spellNext" style="display:none;width:100%">Next →</button>';
+  document.getElementById('spellPlay').addEventListener('click',function(){const d=document.getElementById('spellWord');d.className='dict-word live';const r=spellLevel==='L1'?.5:1;dspeak(spellQ.l,r);setTimeout(function(){d.className='dict-word';d.textContent='Type what you heard...'},spellQ.l.length*150+800)});
+  document.getElementById('spellSubmit').addEventListener('click',function(){checkSpell()});
+  document.getElementById('spellInput').addEventListener('keydown',function(e){if(e.key==='Enter')checkSpell()});
+  document.getElementById('spellNext').addEventListener('click',loadSpell);
+  document.querySelectorAll('.btn-s').forEach(function(b){b.addEventListener('click',function(){spellLevel=this.dataset.l;loadSpell()})});
+}
+
+function checkSpell(){
+  const inp=document.getElementById('spellInput').value.trim().toLowerCase().replace(/[^a-z0-9\s]/g,''),target=spellQ.l.toLowerCase().replace(/[^a-z0-9\s]/g,''),d=document.getElementById('spellWord'),f=document.getElementById('spellFb'),ok=inp===target;
+  document.getElementById('spellInput').disabled=true;document.getElementById('spellSubmit').disabled=true;d.textContent=spellQ.l;
+  S.rounds++;if(ok){d.className='dict-word ok';f.className='fb g show';S.correct++;S.streak++;S.totalScore+=3;f.innerHTML='✅ <b>Perfect!</b>'}else{d.className='dict-word ng';f.className='fb b show';S.wrong++;S.streak=0;f.innerHTML='❌ You typed: <b>'+esc(document.getElementById('spellInput').value)+'</b> → Correct: <b>'+esc(spellQ.l)+'</b>'}
+  document.getElementById('spellNext').style.display='';ui();sv();
+}
+
+// ==================== 🎮 TPR (小学) ====================
+const TPR_CMDS=['Touch your nose!','Clap your hands!','Stand up!','Sit down!','Point to the door!','Raise your hand!','Turn around!','Wave your hand!','Stamp your feet!','Jump twice!','Touch your ears!','Nod your head!','Shake your body!','Open your mouth!','Close your eyes!','Put your hands up!','Touch your toes!','Spin around!','March in place!','Give a thumbs up!'];
+let tprRound=0,tprTotal=5,tprScore=0,tprCurrent='';
+
+function loadTPR(){tprRound=0;tprScore=0;nextTPR()}
+function nextTPR(){
+  if(tprRound>=tprTotal){ctx().innerHTML='<div style="text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:12px"><div style="font-size:40px">🏆</div><div style="font-size:20px;font-weight:800">Round Complete!</div><div style="font-size:16px;color:var(--text2)">Score: '+tprScore+'/'+tprTotal+'</div><div style="font-size:13px;color:var(--text3)">Did you follow all the instructions?</div><button class="btn btn-a" id="tprAgain">Play Again →</button></div>';document.getElementById('tprAgain').addEventListener('click',loadTPR);S.rounds++;S.totalScore+=tprScore;ui();sv();return}
+  tprCurrent=TPR_CMDS[Math.floor(Math.random()*TPR_CMDS.length)];
+  const emoji=tprCurrent.includes('nose')?'👃':tprCurrent.includes('hand')||tprCurrent.includes('Clap')?'👏':tprCurrent.includes('Stand')?'🧍':tprCurrent.includes('Sit')?'🪑':tprCurrent.includes('door')?'🚪':tprCurrent.includes('ear')?'👂':tprCurrent.includes('Jump')?'🦘':tprCurrent.includes('mouth')?'👄':tprCurrent.includes('eye')?'👀':tprCurrent.includes('toe')?'🦶':tprCurrent.includes('Spin')||tprCurrent.includes('Turn')?'🔄':'🎯';
+  ctx().innerHTML='<div class="tpr-card"><div class="tpr-emoji">'+emoji+'</div><div style="font-size:11px;color:var(--text3)">Round '+(tprRound+1)+'/'+tprTotal+'</div><div class="tpr-cmd" id="tprCmd">🎤 Listen...</div><div style="display:flex;gap:12px;margin-top:8px"><button class="btn btn-a" id="tprPlay">▶ Play</button><button class="btn btn-o" id="tprDone">✅ I did it!</button><button class="btn btn-o" id="tprSkip">⏭ Skip</button></div><div class="fb" id="tprFb"></div></div>';
+  document.getElementById('tprPlay').addEventListener('click',function(){document.getElementById('tprCmd').textContent='🔊 '+tprCurrent;dspeak(tprCurrent,.8)});
+  document.getElementById('tprDone').addEventListener('click',function(){tprScore++;document.getElementById('tprFb').className='fb g show';document.getElementById('tprFb').innerHTML='✅ Great job following the instruction!';setTimeout(function(){tprRound++;nextTPR()},600)});
+  document.getElementById('tprSkip').addEventListener('click',function(){document.getElementById('tprFb').className='fb m show';document.getElementById('tprFb').innerHTML='⏭ Skipped. The command was: <b>'+tprCurrent+'</b>';setTimeout(function(){tprRound++;nextTPR()},600)});
+}
+
+// ==================== 📋 中考模拟 (初中) ====================
+let mexamData=null,mexamAnswers=[],mexamSubmitted=false;
+async function loadMidExam(){
+  ctx().innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><span class="loading"></span>Generating exam questions with AI...</div>';
+  mexamSubmitted=false;mexamAnswers=[];
+  try{const r=await fetch('/api/deepseek/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'system',content:'You are an English listening test creator for Chinese middle school students (中考). Create a listening test with: 1 short passage (80-120 words) and 5 multiple choice questions about it. The passage should be about school life, daily activities, or family. Use vocabulary appropriate for Chinese middle school students (1500-2000 words). Return ONLY JSON: {"passage":"...","questions":[{"q":"...","opts":["A","B","C","D"],"ans":0}]}'}],temperature:.8,max_tokens:1500})});if(r.ok){const d=await r.json();const c=(d.choices?.[0]?.message?.content||'').replace(/```json\n?/g,'').replace(/```/g,'').trim();try{mexamData=JSON.parse(c)}catch(e){console.error(e)}}}catch(e){}
+  if(!mexamData)mexamData={passage:'Tom is a middle school student. He gets up at 6:30 every morning and rides his bike to school. His favorite subject is science because his teacher makes it fun. After school, he plays basketball with his friends. He usually finishes his homework before dinner. His mother is proud of him.',questions:[{q:'How does Tom go to school?',opts:['By bus','By bike','On foot','By car'],ans:1},{q:'Why does Tom like science?',opts:['It is easy','His teacher makes it fun','His friends like it','He reads books'],ans:1},{q:'What does Tom do after school?',opts:['Watch TV','Do homework','Play basketball','Go shopping'],ans:2},{q:'When does Tom finish his homework?',opts:['After dinner','Before dinner','At school','In the morning'],ans:1},{q:'How does Tom\'s mother feel?',opts:['Worried','Angry','Sad','Proud'],ans:3}]};
+  renderMidExam();
+}
+
+function renderMidExam(){
+  const d=mexamData,qs=d.questions,mid=Math.ceil(qs.length/2);
+  let l='',r='';const lb=['A','B','C','D'];
+  for(let i=0;i<qs.length;i++){const q=qs[i],h='<div class="mcq-q">'+(i+1)+'. '+esc(q.q)+'</div><div class="mcq-opts">'+q.opts.map(function(o,j){return'<button class="mcq-opt" data-q="'+i+'" data-o="'+j+'">'+lb[j]+'. '+esc(o)+'</button>'}).join('')+'</div>';if(i<mid)l+=h;else r+=h}
+  ctx().innerHTML=
+    '<div class="row center"><button class="btn-play" id="mexamPlay">▶</button><span style="font-size:11px;color:var(--text3)">Click to play the passage</span></div>'+
+    '<div class="mcq-grid"><div class="passage" id="mexamPassage">'+esc(d.passage)+'</div><div class="vbox" style="overflow-y:auto">'+l+'</div><div class="vbox" style="overflow-y:auto">'+r+'</div><button class="btn btn-a" id="mexamSubmit" style="grid-column:1/-1">Submit All Answers</button></div>'+
+    '<div class="fb" id="mexamFb"></div><button class="btn btn-o" id="mexamAgain" style="display:none;width:100%">New Test →</button>';
+  document.getElementById('mexamPlay').addEventListener('click',function(){if(d.passage)dspeak(d.passage,.9)});
+  document.querySelectorAll('.mcq-opt').forEach(function(b){b.addEventListener('click',function(){const qi=parseInt(this.dataset.q);document.querySelectorAll('.mcq-opt[data-q="'+qi+'"]').forEach(function(x){x.classList.remove('sel')});this.classList.add('sel')})});
+  document.getElementById('mexamSubmit').addEventListener('click',function(){if(mexamSubmitted)return;mexamSubmitted=true;let cc=0;const t=qs.length;for(let i=0;i<t;i++){const sel=document.querySelector('.mcq-opt[data-q="'+i+'"].sel'),ans=qs[i].ans;document.querySelectorAll('.mcq-opt[data-q="'+i+'"]').forEach(function(b){b.disabled=true;if(parseInt(b.dataset.o)===ans)b.classList.add('correct')});if(sel&&parseInt(sel.dataset.o)===ans)cc++;else if(sel)sel.classList.add('wrong')}const sc=Math.round(cc/t*100);S.rounds++;S.totalScore+=cc*4;if(cc>=4){S.correct++;S.streak++}else{S.wrong++;S.streak=0}const fb=document.getElementById('mexamFb');fb.className='fb show '+(sc>=80?'g':sc>=60?'m':'b');fb.innerHTML='Score: '+cc+'/'+t+' ('+sc+'%)';document.getElementById('mexamAgain').style.display='';ui();sv()});
+  document.getElementById('mexamAgain').addEventListener('click',loadMidExam);
+}
+
+// ==================== 🎯 关键词抓取 (初中) ====================
+let kwData=null,kwSubmitted=false;
+async function loadKeyW(){
+  ctx().innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><span class="loading"></span>Generating keyword listening task...</div>';
+  kwSubmitted=false;
+  try{const r=await fetch('/api/deepseek/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'system',content:'Create a short English broadcast (50-80 words) like an airport announcement, weather forecast, shopping promotion, or school notice for Chinese middle school students. Include specific details (numbers, times, places, prices). Return ONLY JSON: {"text":"...","type":"airport/weather/shopping/school","keywords":[{"label":"Flight Number / Temperature / etc","answer":"the answer"}]}. Provide 4-5 keywords.'}],temperature:.8,max_tokens:800})});if(r.ok){const d=await r.json();const c=(d.choices?.[0]?.message?.content||'').replace(/```json\n?/g,'').replace(/```/g,'').trim();try{kwData=JSON.parse(c)}catch(e){}}}catch(e){}
+  if(!kwData)kwData={text:'Attention please. Flight CA981 to Beijing will depart from Gate B12 at 3:45 PM. Passengers please proceed to the boarding gate immediately. The temperature in Beijing is 25 degrees Celsius with sunny skies.',type:'airport',keywords:[{label:'Flight Number',answer:'CA981'},{label:'Gate',answer:'B12'},{label:'Departure Time',answer:'3:45 PM'},{label:'Temperature',answer:'25 degrees'}]};
+  renderKeyW();
+}
+
+function renderKeyW(){
+  ctx().innerHTML=
+    '<div class="row center"><button class="btn-play" id="kwPlay">▶</button><span style="font-size:11px;color:var(--text3)">Listen to the broadcast</span><span style="font-size:10px;color:var(--accent);font-weight:600;margin-left:auto">'+kwData.type.toUpperCase()+'</span></div>'+
+    '<div class="kw-grid">'+kwData.keywords.map(function(k,i){return'<div class="kw-item"><span class="kw-label">'+esc(k.label)+'</span><input type="text" id="kwInp'+i+'" placeholder="Type here..."></div>'}).join('')+'</div>'+
+    '<div class="row"><button class="btn btn-a" id="kwSubmit">Submit</button><button class="btn btn-o btn-s" id="kwPlay2">Replay ▶</button></div>'+
+    '<div class="fb" id="kwFb"></div><button class="btn btn-o" id="kwNext" style="display:none;width:100%">Next →</button>';
+  document.getElementById('kwPlay').addEventListener('click',function(){dspeak(kwData.text,.9)});
+  document.getElementById('kwPlay2').addEventListener('click',function(){dspeak(kwData.text,.9)});
+  document.getElementById('kwSubmit').addEventListener('click',function(){if(kwSubmitted)return;kwSubmitted=true;let cc=0;const t=kwData.keywords.length;for(let i=0;i<t;i++){const inp=document.getElementById('kwInp'+i),ans=kwData.keywords[i].answer.toLowerCase(),usr=inp.value.trim().toLowerCase();inp.disabled=true;if(usr&&(usr===ans||usr.includes(ans)||ans.includes(usr))){cc++;inp.classList.add('ok')}else inp.classList.add('ng')}S.rounds++;const sc=Math.round(cc/t*100);S.totalScore+=cc*3;if(cc>=t-1){S.correct++;S.streak++}else{S.wrong++;S.streak=0}const fb=document.getElementById('kwFb');fb.className='fb show '+(sc>=80?'g':sc>=60?'m':'b');fb.innerHTML='Score: '+cc+'/'+t+' ('+sc+'%)<br>'+kwData.keywords.map(function(k){return esc(k.label)+': <b>'+esc(k.answer)+'</b>'}).join(' &nbsp;|&nbsp; ');document.getElementById('kwNext').style.display='';ui();sv()});
+  document.getElementById('kwNext').addEventListener('click',loadKeyW);
+}
+
+// ==================== 🏫 校园场景 (初中) ====================
+const SCHOOL_TOPICS=['borrowing something','asking for directions','ordering food','seeing a doctor','making a phone call','weekend plans','talking about weather','shopping','asking the time','giving advice'];
+let schoolData=null,schoolSubmitted=false,schoolScore=0;
+async function loadSchool(){
+  ctx().innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><span class="loading"></span>Generating school conversation...</div>';
+  schoolSubmitted=false;const topic=SCHOOL_TOPICS[Math.floor(Math.random()*SCHOOL_TOPICS.length)];
+  try{const r=await fetch('/api/deepseek/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'system',content:'Create a short English dialogue (3-4 exchanges, about 60-80 words) between two middle school students. Topic: '+topic+'. Then create 3 multiple choice questions about the dialogue. Return ONLY JSON: {"dialogue":[{"speaker":"A/B","text":"..."}],"topic":"'+topic+'","questions":[{"q":"...","opts":["A","B","C","D"],"ans":0}]}'}],temperature:.8,max_tokens:1200})});if(r.ok){const d=await r.json();const c=(d.choices?.[0]?.message?.content||'').replace(/```json\n?/g,'').replace(/```/g,'').trim();try{schoolData=JSON.parse(c)}catch(e){}}}catch(e){}
+  if(!schoolData)schoolData={dialogue:[{speaker:'A',text:'Hi! Can I borrow your English textbook? I forgot mine at home.'},{speaker:'B',text:'Of course! Here you go. Just make sure to return it by Friday.'},{speaker:'A',text:'Thank you so much! I\'ll give it back tomorrow.'},{speaker:'B',text:'No problem. We have a test next Monday, so make sure you study!'}],topic:'borrowing something',questions:[{q:'What does A want to borrow?',opts:['A pen','An English textbook','A notebook','A dictionary'],ans:1},{q:'When should A return the book?',opts:['By Friday','By Monday','Tomorrow','Next week'],ans:0},{q:'When is the test?',opts:['Friday','Saturday','Sunday','Monday'],ans:3}]};
+  renderSchool();
+}
+
+function renderSchool(){
+  const d=schoolData;
+  ctx().innerHTML=
+    '<div style="font-size:12px;font-weight:600;color:var(--accent)">Topic: '+esc(d.topic)+'</div>'+
+    '<div style="padding:12px;background:var(--bg);border-radius:var(--r);font-size:13px;line-height:1.8">'+d.dialogue.map(function(l){return'<b>'+l.speaker+':</b> '+esc(l.text)}).join('<br>')+'</div>'+
+    '<div class="row center"><button class="btn-play" id="schPlay">▶</button><span style="font-size:11px;color:var(--text3)">Listen to conversation</span></div>'+
+    '<div class="vbox">'+d.questions.map(function(q,i){return'<div class="mcq-q">'+(i+1)+'. '+esc(q.q)+'</div><div class="mcq-opts">'+q.opts.map(function(o,j){return'<button class="mcq-opt" data-q="'+i+'" data-o="'+j+'">'+(j===0?'A':j===1?'B':j===2?'C':'D')+'. '+esc(o)+'</button>'}).join('')+'</div>'}).join('')+'</div>'+
+    '<button class="btn btn-a" id="schSubmit" style="width:100%">Submit Answers</button><div class="fb" id="schFb"></div><button class="btn btn-o" id="schNext" style="display:none;width:100%">New Conversation →</button>';
+  document.getElementById('schPlay').addEventListener('click',async function(){
+    // Alternate male/female-ish voices for different speakers
+    for(const l of d.dialogue){await speak(l.text,l.speaker==='A'?.95:1.05);await new Promise(function(r){setTimeout(r,200)})}
+  });
+  document.querySelectorAll('.mcq-opt').forEach(function(b){b.addEventListener('click',function(){const qi=parseInt(this.dataset.q);document.querySelectorAll('.mcq-opt[data-q="'+qi+'"]').forEach(function(x){x.classList.remove('sel')});this.classList.add('sel')})});
+  document.getElementById('schSubmit').addEventListener('click',function(){if(schoolSubmitted)return;schoolSubmitted=true;let cc=0;const t=d.questions.length;for(let i=0;i<t;i++){const sel=document.querySelector('.mcq-opt[data-q="'+i+'"].sel'),ans=d.questions[i].ans;document.querySelectorAll('.mcq-opt[data-q="'+i+'"]').forEach(function(b){b.disabled=true;if(parseInt(b.dataset.o)===ans)b.classList.add('correct')});if(sel&&parseInt(sel.dataset.o)===ans)cc++;else if(sel)sel.classList.add('wrong')}const sc=Math.round(cc/t*100);S.rounds++;S.totalScore+=cc*3;if(cc===t){S.correct++;S.streak++}else{S.wrong++;S.streak=0}const fb=document.getElementById('schFb');fb.className='fb show '+(sc>=80?'g':sc>=60?'m':'b');fb.innerHTML='Score: '+cc+'/'+t+' ('+sc+'%)';document.getElementById('schNext').style.display='';ui();sv()});
+  document.getElementById('schNext').addEventListener('click',loadSchool);
+}
+
+// ==================== 🎙️ 高考模拟 (高中) ====================
+let hexamData=null,hexamSubmitted=false;
+async function loadHighExam(){
+  ctx().innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><span class="loading"></span>Generating Gaokao-level exam...</div>';
+  hexamSubmitted=false;
+  try{const r=await fetch('/api/deepseek/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'system',content:'You are creating a Chinese college entrance exam (高考) English listening test. Create: 1 passage (120-180 words, about news, science, culture, or social topics. Use vocabulary for 3500-word level). Then create 5 multiple choice questions that test: main idea, detail, inference, attitude, purpose. Include one tricky/distractor question. Return ONLY JSON: {"passage":"...","questions":[{"q":"...","opts":["A","B","C","D"],"ans":0,"explain":"brief explanation"}]}'}],temperature:.7,max_tokens:1800})});if(r.ok){const d=await r.json();const c=(d.choices?.[0]?.message?.content||'').replace(/```json\n?/g,'').replace(/```/g,'').trim();try{hexamData=JSON.parse(c)}catch(e){}}}catch(e){}
+  if(!hexamData)hexamData={passage:'Scientists have discovered that regular exercise not only improves physical health but also has significant effects on brain function. Research shows that students who exercise at least three times a week perform better on memory tests. The study, conducted over two years with 500 participants, found that exercise increases blood flow to the brain and helps create new neural connections. However, researchers caution that excessive exercise can lead to fatigue and injury. They recommend 30-45 minutes of moderate activity per day for optimal results.',questions:[{q:'What is the main idea of the passage?',opts:['Exercise helps brain function','Students should study more','Sports are dangerous','Memory tests are important'],ans:0,explain:'The passage primarily discusses how exercise benefits brain function and cognitive performance.'},{q:'How many participants were in the study?',opts:['200','300','500','1000'],ans:2,explain:'The passage states the study was conducted with 500 participants.'},{q:'How often should students exercise for best results?',opts:['Once a week','Three times a week minimum','Every day','Twice a month'],ans:1,explain:'The passage mentions students who exercise at least three times a week perform better.'},{q:'What is the author\'s attitude toward exercise?',opts:['Skeptical','Cautiously positive','Negative','Indifferent'],ans:1,explain:'The author is positive about benefits but cautions against excess (30-45 min recommended).'},{q:'What is the recommended daily exercise duration?',opts:['15-20 minutes','30-45 minutes','60-90 minutes','2 hours'],ans:1,explain:'The passage recommends 30-45 minutes of moderate activity per day.'}]};
+  renderHighExam();
+}
+
+function renderHighExam(){
+  const d=hexamData,qs=d.questions,mid=Math.ceil(qs.length/2);let l='',r='';const lb=['A','B','C','D'];
+  for(let i=0;i<qs.length;i++){const q=qs[i],h='<div class="mcq-q">'+(i+1)+'. '+esc(q.q)+'</div><div class="mcq-opts">'+q.opts.map(function(o,j){return'<button class="mcq-opt" data-q="'+i+'" data-o="'+j+'">'+lb[j]+'. '+esc(o)+'</button>'}).join('')+'</div>';if(i<mid)l+=h;else r+=h}
+  ctx().innerHTML=
+    '<div class="row center"><button class="btn-play" id="hexamPlay">▶</button><span style="font-size:11px;color:var(--text3)">Play passage (natural speed ~140 wpm)</span></div>'+
+    '<div class="mcq-grid"><div class="passage" id="hexamPassage">'+esc(d.passage)+'</div><div class="vbox" style="overflow-y:auto">'+l+'</div><div class="vbox" style="overflow-y:auto">'+r+'</div><button class="btn btn-a" id="hexamSubmit" style="grid-column:1/-1">Submit Answers</button></div>'+
+    '<div class="fb" id="hexamFb"></div><div id="hexamExplain" style="display:none;font-size:11px;padding:8px;background:var(--bg);border-radius:var(--rs);line-height:1.5"></div><button class="btn btn-o" id="hexamAgain" style="display:none;width:100%">New Test →</button>';
+  document.getElementById('hexamPlay').addEventListener('click',function(){dspeak(d.passage,1.1)});
+  document.querySelectorAll('.mcq-opt').forEach(function(b){b.addEventListener('click',function(){const qi=parseInt(this.dataset.q);document.querySelectorAll('.mcq-opt[data-q="'+qi+'"]').forEach(function(x){x.classList.remove('sel')});this.classList.add('sel')})});
+  document.getElementById('hexamSubmit').addEventListener('click',function(){if(hexamSubmitted)return;hexamSubmitted=true;let cc=0;const t=qs.length;for(let i=0;i<t;i++){const sel=document.querySelector('.mcq-opt[data-q="'+i+'"].sel'),ans=qs[i].ans;document.querySelectorAll('.mcq-opt[data-q="'+i+'"]').forEach(function(b){b.disabled=true;if(parseInt(b.dataset.o)===ans)b.classList.add('correct')});if(sel&&parseInt(sel.dataset.o)===ans)cc++;else if(sel)sel.classList.add('wrong')}const sc=Math.round(cc/t*100);S.rounds++;S.totalScore+=cc*5;if(cc>=4){S.correct++;S.streak++}else{S.wrong++;S.streak=0}const fb=document.getElementById('hexamFb');fb.className='fb show '+(sc>=80?'g':sc>=60?'m':'b');fb.innerHTML='Score: '+cc+'/'+t+' ('+sc+'%)';document.getElementById('hexamExplain').style.display='';document.getElementById('hexamExplain').innerHTML='<b>Explanations:</b><br>'+qs.map(function(q,i){return'<b>Q'+(i+1)+':</b> '+esc(q.explain)}).join('<br>');document.getElementById('hexamAgain').style.display='';ui();sv()});
+  document.getElementById('hexamAgain').addEventListener('click',loadHighExam);
+}
+
+// ==================== 🗣️ 推理判断 (高中) ====================
+const INFER_TYPES=['emotion','place','relationship','intention','attitude'];
+let inferData=null,inferSubmitted=false;
+async function loadInfer(){
+  ctx().innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><span class="loading"></span>Generating inference questions...</div>';
+  inferSubmitted=false;const tp=INFER_TYPES[Math.floor(Math.random()*INFER_TYPES.length)];
+  try{const r=await fetch('/api/deepseek/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'system',content:'Create an English listening inference exercise for Chinese high school students (高考 level). Generate ONE short statement or dialogue (1-3 sentences). The type is: '+tp+' (emotion=what emotion is expressed, place=where does this take place, relationship=relationship between speakers, intention=what does the speaker want, attitude=speaker\'s attitude). Then create 1 multiple choice question testing inference. Include a BRIEF explanation in Chinese (1 sentence) of WHY the answer is correct. Return ONLY JSON: {"text":"...","type":"'+tp+'","q":"...","opts":["A","B","C","D"],"ans":0,"explain":"解释"} '}],temperature:.8,max_tokens:600})});if(r.ok){const d=await r.json();const c=(d.choices?.[0]?.message?.content||'').replace(/```json\n?/g,'').replace(/```/g,'').trim();try{inferData=JSON.parse(c)}catch(e){}}}catch(e){}
+  if(!inferData)inferData={text:'"I\'ve been waiting here for over an hour. This is absolutely ridiculous."',type:'emotion',q:'How does the speaker feel?',opts:['Excited','Impatient','Nervous','Grateful'],ans:1,explain:'说话人强调"等了一个多小时"且用了"ridiculous"，表达不耐烦的情绪。'};
+  renderInfer();
+}
+
+function renderInfer(){
+  const d=inferData;
+  ctx().innerHTML=
+    '<div style="font-size:11px;font-weight:700;color:var(--accent)">Inference Type: '+esc(d.type)+'</div>'+
+    '<div class="infer-card"><div class="quote">💬 '+esc(d.text)+'</div></div>'+
+    '<div class="row center"><button class="btn-play" id="inferPlay">▶</button><span style="font-size:11px;color:var(--text3)">Listen to the statement</span></div>'+
+    '<div class="mcq-q">'+esc(d.q)+'</div><div class="mcq-opts">'+d.opts.map(function(o,j){return'<button class="mcq-opt" data-o="'+j+'">'+(j===0?'A':j===1?'B':j===2?'C':'D')+'. '+esc(o)+'</button>'}).join('')+'</div>'+
+    '<button class="btn btn-a" id="inferSubmit" style="width:100%">Submit</button><div class="fb" id="inferFb"></div>'+
+    '<div id="inferExplain" style="display:none;font-size:12px;padding:10px;background:var(--bg);border-radius:var(--rs);line-height:1.6"></div>'+
+    '<button class="btn btn-o" id="inferNext" style="display:none;width:100%">Next Question →</button>';
+  document.getElementById('inferPlay').addEventListener('click',function(){dspeak(d.text,1)});
+  document.querySelectorAll('.mcq-opt').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('.mcq-opt').forEach(function(x){x.classList.remove('sel')});this.classList.add('sel')})});
+  document.getElementById('inferSubmit').addEventListener('click',function(){if(inferSubmitted)return;inferSubmitted=true;const sel=document.querySelector('.mcq-opt.sel');let ok=false;if(sel&&parseInt(sel.dataset.o)===d.ans)ok=true;document.querySelectorAll('.mcq-opt').forEach(function(b){b.disabled=true;if(parseInt(b.dataset.o)===d.ans)b.classList.add('correct')});if(sel&&!ok)sel.classList.add('wrong');S.rounds++;if(ok){S.correct++;S.streak++;S.totalScore+=4}else{S.wrong++;S.streak=0}const fb=document.getElementById('inferFb');fb.className='fb show '+(ok?'g':'b');fb.innerHTML=ok?'✅ <b>Correct!</b>':'❌ <b>Wrong!</b> The correct answer is highlighted.';document.getElementById('inferExplain').style.display='';document.getElementById('inferExplain').textContent='💡 '+d.explain;document.getElementById('inferNext').style.display='';ui();sv()});
+  document.getElementById('inferNext').addEventListener('click',loadInfer);
+}
+
+// ==================== 📰 新闻听力 (高中) ====================
+let newsData=null,newsSubmitted=false;
+async function loadNews(){
+  ctx().innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)"><span class="loading"></span>Generating news listening task...</div>';
+  newsSubmitted=false;
+  try{const r=await fetch('/api/deepseek/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'system',content:'Create a short English news report (80-130 words) for Chinese high school students. Topic: technology, environment, education, health, or culture. Include specific facts. Then return ONLY JSON: {"text":"...","category":"tech/env/edu/health/culture","fields":[{"label":"Who/What/When/Where/Why/How","answer":"..."}]}. Include 4-5 of the 5W1H fields.'}],temperature:.8,max_tokens:1000})});if(r.ok){const d=await r.json();const c=(d.choices?.[0]?.message?.content||'').replace(/```json\n?/g,'').replace(/```/g,'').trim();try{newsData=JSON.parse(c)}catch(e){}}}catch(e){}
+  if(!newsData)newsData={text:'A team of researchers at Stanford University has developed a new AI system that can detect early signs of lung cancer with 94% accuracy. The system was trained on over 50,000 medical images and was tested across five major hospitals. The findings were published last Tuesday in the Journal of Medical Research. Doctors say this technology could save thousands of lives each year by catching cancer at an earlier, more treatable stage.',category:'health',fields:[{label:'Who',answer:'Stanford University researchers'},{label:'What',answer:'AI system to detect lung cancer'},{label:'When',answer:'Findings published last Tuesday'},{label:'Where',answer:'Five major hospitals'},{label:'Why',answer:'Save thousands of lives'},{label:'Accuracy',answer:'94%'}]};
+  renderNews();
+}
+
+function renderNews(){
+  ctx().innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:700;color:var(--accent)">📰 '+esc(newsData.category).toUpperCase()+'</span><span style="font-size:10px;color:var(--text3)">Fill in the 5W1H information after listening</span></div>'+
+    '<div class="row center"><button class="btn-play" id="newsPlay">▶</button><span style="font-size:11px;color:var(--text3)">Listen to the news report</span></div>'+
+    '<div class="who-grid">'+newsData.fields.map(function(f,i){return'<div class="who-item"><label>'+esc(f.label)+'</label><input type="text" id="newsInp'+i+'" placeholder="Type..."></div>'}).join('')+'</div>'+
+    '<div class="row"><button class="btn btn-a" id="newsSubmit">Submit</button><button class="btn btn-o btn-s" id="newsPlay2">Replay ▶</button></div>'+
+    '<div class="fb" id="newsFb"></div><button class="btn btn-o" id="newsNext" style="display:none;width:100%">Next Report →</button>';
+  document.getElementById('newsPlay').addEventListener('click',function(){dspeak(newsData.text,1)});
+  document.getElementById('newsPlay2').addEventListener('click',function(){dspeak(newsData.text,1)});
+  document.getElementById('newsSubmit').addEventListener('click',function(){if(newsSubmitted)return;newsSubmitted=true;let cc=0;const t=newsData.fields.length;for(let i=0;i<t;i++){const inp=document.getElementById('newsInp'+i),ans=newsData.fields[i].answer.toLowerCase(),usr=inp.value.trim().toLowerCase();inp.disabled=true;if(usr&&(usr===ans||usr.includes(ans)||ans.includes(usr)||(ans.split(' ').length>2&&levSim(usr,ans)>.6))){cc++;inp.classList.add('ok')}else inp.classList.add('ng')}S.rounds++;const sc=Math.round(cc/t*100);S.totalScore+=cc*4;if(cc>=t-1){S.correct++;S.streak++}else{S.wrong++;S.streak=0}const fb=document.getElementById('newsFb');fb.className='fb show '+(sc>=80?'g':sc>=60?'m':'b');fb.innerHTML='Score: '+cc+'/'+t+' ('+sc+'%)<br>'+newsData.fields.map(function(f){return esc(f.label)+': <b>'+esc(f.answer)+'</b>'}).join(' &nbsp;|&nbsp; ');document.getElementById('newsNext').style.display='';ui();sv()});
+  document.getElementById('newsNext').addEventListener('click',loadNews);
+}
+
+function levSim(a,b){if(!a||!b)return 0;const m=[];for(let i=0;i<=b.length;i++)m[i]=[i];for(let j=0;j<=a.length;j++)m[0][j]=j;for(let i=1;i<=b.length;i++)for(let j=1;j<=a.length;j++)m[i][j]=b.charAt(i-1)===a.charAt(j-1)?m[i-1][j-1]:Math.min(m[i-1][j-1]+1,m[i][j-1]+1,m[i-1][j]+1);return 1-m[b.length][a.length]/Math.max(a.length,b.length)}
+
+// ==================== TIMER ====================
+function clearTimer(){if(S.timer)clearInterval(S.timer);S.timer=null}
+
+// ==================== INIT ====================
+renderModes();
+</script>
+</body>
+</html>

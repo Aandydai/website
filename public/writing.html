@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Writing - promise</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/writing.css">
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/rss.xml">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-left">
+      <a href="/" class="site-title">promise</a>
+      <img class="site-subtitle" src="/img/subtitle.svg" alt="Shall I compare thee to a summer's day?">
+    </div>
+    <nav class="nav">
+      <div class="nav-right">
+        <a href="https://www.daishutao.online">Home</a>
+        <a href="/posts">Posts</a>
+        <a href="/categories">Categories</a>
+        <a href="/vocabulary">Vocabulary</a>
+        <a href="/listening">Listening</a>
+        <a href="/speaking">Speaking</a>
+        <a href="/reading">Reading</a>
+        <a href="/writing" class="active">Writing</a>
+        <a href="/viewing">Viewing</a>
+        <a href="/aibb">AIBB</a>
+        <a href="/links">Links</a>
+        <a href="/about">About</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="main">
+    <div class="page-content">
+      <div class="w-app">
+
+        <div class="w-head">
+          <h1>Writing · 写作批改</h1>
+          <p class="w-sub">上传或粘贴高考应用文 / 读后续写的题目与作答，DeepSeek 实时批改：分项打分 + 逐句高亮纠错 + 范文润色。</p>
+        </div>
+
+        <div class="w-tabs" id="typeTabs">
+          <button type="button" class="w-tab active" data-type="application">应用文 · 15 分</button>
+          <button type="button" class="w-tab" data-type="continuation">读后续写 · 25 分</button>
+        </div>
+
+        <section class="w-card">
+          <div class="w-card-label" id="questionLabel">① 题目要求</div>
+          <textarea id="question" class="w-textarea" rows="4" placeholder="粘贴题目要求；或点下方按钮上传题目照片 / Word / PDF，自动识别成文字。"></textarea>
+          <div class="w-tools">
+            <label class="w-upload">📎 上传题目<input type="file" id="questionFile" accept="image/*,.docx,.pdf,.txt" hidden></label>
+            <span class="w-hint" id="questionHint"></span>
+          </div>
+        </section>
+
+        <section class="w-card" id="continuationCard" hidden>
+          <div class="w-card-label">② 读后续写材料</div>
+          <label class="w-mini" for="sourceText">阅读原文</label>
+          <textarea id="sourceText" class="w-textarea" rows="5" placeholder="粘贴阅读原文；或上传题目文件后自动识别。"></textarea>
+          <div class="w-tools">
+            <label class="w-upload">📎 上传原文<input type="file" id="sourceFile" accept="image/*,.docx,.pdf,.txt" hidden></label>
+            <span class="w-hint" id="sourceHint"></span>
+          </div>
+          <label class="w-mini" for="promptOpeners">两个段首句</label>
+          <textarea id="promptOpeners" class="w-textarea" rows="3" placeholder="粘贴两个段首句（第一段：… ；第二段：…）"></textarea>
+        </section>
+
+        <section class="w-card">
+          <div class="w-card-label" id="essayLabel">② 我的作文</div>
+          <textarea id="studentEssay" class="w-textarea w-essay" rows="8" placeholder="粘贴或输入你的作文（约 80 词）；手写拍照可点下方按钮上传识别。"></textarea>
+          <div class="w-tools">
+            <label class="w-upload">📎 上传作答（照片 / Word / PDF）<input type="file" id="essayFile" accept="image/*,.docx,.pdf,.txt" hidden></label>
+            <span class="w-hint" id="essayHint"></span>
+            <span class="w-count" id="essayCount">0 词</span>
+          </div>
+        </section>
+
+        <div class="w-actions">
+          <button type="button" id="gradeBtn" class="w-primary">开始批改</button>
+          <button type="button" id="clearBtn" class="w-ghost">清空</button>
+        </div>
+
+        <div id="gradeMsg" class="w-msg" hidden></div>
+
+        <section id="result" class="w-result" hidden></section>
+
+        <section class="w-history">
+          <div class="w-card-label">我的批改记录</div>
+          <div id="historyList" class="w-history-list"><p class="w-empty">加载中…</p></div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-links">
+      <a href="/">Home</a>
+      <a href="/posts">Posts</a>
+      <a href="/rss.xml" target="_blank">RSS</a>
+      <a href="/archive">Archive</a>
+    </div>
+    <div id="footer-info">© promise</div>
+  </footer>
+
+  <div id="back-to-top" class="back-to-top" title="Back to top"></div>
+  <script src="/js/nav.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/search.js"></script>
+  <script src="/js/writing.js"></script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Vocabulary</title>
+<link rel="stylesheet" href="/css/vocabulary.css">
+<script src="/js/vocab-cet4.js" defer></script>
+<script src="/js/vocab-cet6.js" defer></script>
+<script src="/js/vocab-kaoyan.js" defer></script>
+<script src="/js/vocab-ielts.js" defer></script>
+<script src="/js/vocab-toefl.js" defer></script>
+<script src="/js/vocab-sat.js" defer></script>
+<script src="/js/vocab-gre.js" defer></script>
+<script src="/js/vocab-textbook.js" defer></script>
+</head>
+<body>
+<a href="/posts" style="position:fixed;top:8px;left:8px;z-index:100;background:rgba(255,255,255,0.9);color:#667eea;text-decoration:none;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.15);backdrop-filter:blur(4px);">← Posts</a>
+<div class="card" id="app">
+    <button class="fs-toggle" id="fsToggle" onclick="toggleFullscreen()">⛶ 全屏</button>
+    <div class="fs-font-controls">
+        <button class="fs-font-btn" onclick="increaseFont()">A+</button>
+        <button class="fs-font-btn" onclick="decreaseFont()">A−</button>
+    </div>
+    <button class="rail-toggle rail-toggle-left" id="modeRailToggle" onclick="toggleRail('mode')">模式</button>
+    <button class="rail-toggle rail-toggle-right" id="levelRailToggle" onclick="toggleRail('level')">难度</button>
+    <div class="mode-bar">
+        <button class="mode-btn active" id="studyMode" onclick="setMode('study')">背诵</button>
+        <button class="mode-btn" id="testMode" onclick="setMode('test')">检测</button>
+        <button class="mode-btn vocab-mode" id="vocabMode" onclick="setMode('vocab')">生词</button>
+        <button class="mode-btn spell-mode" id="spellMode" onclick="setMode('spell')">拼写</button>
+        <button class="mode-btn quiz-mode" id="quizMode" onclick="setMode('quiz')">选择</button>
+        <button class="mode-btn battle-mode-btn" id="battleMode" onclick="setMode('battle')">对战</button>
+        <button class="mode-btn multi-mode-btn" id="multiMode" onclick="setMode('multi')">多战</button>
+        <button class="mode-btn race-mode-btn" id="raceMode" onclick="setMode('race')">多赛</button>
+        <button class="mode-btn online-mode-btn" id="onlineMode" onclick="setMode('online')">在线</button>
+    </div>
+    <div class="status-bar">
+        <span class="search-result" id="searchResult"></span>
+        <span id="progressText">1 / 3673</span>
+    </div>
+    <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="输入单词或序号搜索..." autocomplete="off">
+        <button onclick="searchWord()">搜索</button>
+    </div>
+    <div class="card-content show" id="cardContent">
+        <div class="word-row">
+    <div class="word" id="wordDisplay"></div>
+    <span class="speaker-wrap" id="speakerWrap" onclick="playPronunciation(event)" title="点击播放发音">
+        <span class="speaker">🔊</span>
+        <span class="phonetic" id="phoneticDisplay"></span>
+    </span>
+    <button class="star-btn" id="starBtn" onclick="toggleStarWord()" title="收藏/取消收藏">⭐</button>
+    <button class="master-btn" id="masterBtn" onclick="toggleMasterWord()" title="标记已掌握/取消">✅</button>
+</div>
+        <div class="rating" id="ratingDisplay"></div>
+        <div class="sentence" id="sentenceDisplay"><span id="sentenceText"></span><span class="sentence-speaker" id="sentenceSpeaker" onclick="playSentence(event)" title="播放整句发音">🔊</span></div>
+        <div class="translation" id="translationDisplay"></div>
+        <div class="definition" id="definitionDisplay"></div>
+    </div>
+    <div class="spell-panel" id="spellPanel">
+        <div class="spell-prompt" id="spellPrompt"></div>
+        <div class="spell-input-row">
+            <input type="text" id="spellInput" placeholder="输入或读出单词..." autocomplete="off" autofocus>
+            <button class="mic-btn" id="micBtn" onclick="startVoiceInput(event)" title="语音输入">🎤</button>
+            <button onclick="checkSpelling()">确认</button>
+        </div>
+        <div class="spell-feedback" id="spellFeedback"></div>
+        <div class="spell-score" id="spellScore">✅ 0 &nbsp; ❌ 0</div>
+    </div>
+    <div class="quiz-panel" id="quizPanel">
+        <div class="quiz-word" id="quizWord"></div>
+        <div class="quiz-options" id="quizOptions"></div>
+        <div class="quiz-score-row"><span id="quizStat"></span> <button class="wrong-word-btn" id="quizWrongBtn" type="button" onclick="showQuizWrongWords()" style="display:none">错词库</button> <button class="quiz-next" id="quizNextBtn" onclick="nextQuizWord()">下一题 ▶</button></div>
+    </div>
+    <div class="battle-panel" id="battlePanel">
+        <div class="battle-result" id="battleResult"></div>
+                <div class="battle-row">
+            <div class="battle-player p1">
+                <div class="battle-score"><span class="p1-color">👤 玩家A</span> <span id="battleStat1"></span></div>
+                <div class="battle-word" id="battleWord1"></div>
+                <div class="battle-options" id="battleOptions1"></div>
+            </div>
+            <div class="battle-player p2">
+                <div class="battle-score"><span class="p2-color">👤 玩家B</span> <span id="battleStat2"></span></div>
+                <div class="battle-word" id="battleWord2"></div>
+                <div class="battle-options" id="battleOptions2"></div>
+            </div>
+        </div>
+    </div>
+    <div class="multi-panel" id="multiPanel">
+        <div class="multi-result" id="multiResult"></div>
+                <div class="multi-grid">
+            <div class="multi-player mp-a">
+                <div class="multi-score"><span class="mp-a-color">👤 玩家A</span> <span id="multiStatA"></span></div>
+                <div class="multi-word" id="multiWordA"></div>
+                <div class="multi-options" id="multiOptionsA"></div>
+            </div>
+            <div class="multi-player mp-b">
+                <div class="multi-score"><span class="mp-b-color">👤 玩家B</span> <span id="multiStatB"></span></div>
+                <div class="multi-word" id="multiWordB"></div>
+                <div class="multi-options" id="multiOptionsB"></div>
+            </div>
+            <div class="multi-player mp-c">
+                <div class="multi-score"><span class="mp-c-color">👤 玩家C</span> <span id="multiStatC"></span></div>
+                <div class="multi-word" id="multiWordC"></div>
+                <div class="multi-options" id="multiOptionsC"></div>
+            </div>
+            <div class="multi-player mp-d">
+                <div class="multi-score"><span class="mp-d-color">👤 玩家D</span> <span id="multiStatD"></span></div>
+                <div class="multi-word" id="multiWordD"></div>
+                <div class="multi-options" id="multiOptionsD"></div>
+            </div>
+        </div>
+    </div>
+    <div class="race-panel" id="racePanel">
+        <div class="race-result" id="raceResult"></div>
+                <div class="race-grid">
+            <div class="race-player rp-a">
+                <div class="race-score"><span class="rp-a-color">👤 玩家A</span> <span id="raceStatA"></span></div>
+                <div class="race-word" id="raceWordA"></div>
+                <div class="race-options" id="raceOptionsA"></div>
+            </div>
+            <div class="race-player rp-b">
+                <div class="race-score"><span class="rp-b-color">👤 玩家B</span> <span id="raceStatB"></span></div>
+                <div class="race-word" id="raceWordB"></div>
+                <div class="race-options" id="raceOptionsB"></div>
+            </div>
+            <div class="race-player rp-c">
+                <div class="race-score"><span class="rp-c-color">👤 玩家C</span> <span id="raceStatC"></span></div>
+                <div class="race-word" id="raceWordC"></div>
+                <div class="race-options" id="raceOptionsC"></div>
+            </div>
+            <div class="race-player rp-d">
+                <div class="race-score"><span class="rp-d-color">👤 玩家D</span> <span id="raceStatD"></span></div>
+                <div class="race-word" id="raceWordD"></div>
+                <div class="race-options" id="raceOptionsD"></div>
+            </div>
+        </div>
+    </div>
+    <div class="online-panel" id="onlinePanel">
+        <div id="onlineRoomUI" class="online-room-ui">
+            <div class="online-row">
+                <button class="online-btn primary" onclick="createOnlineRoom()">创建房间</button>
+                <div class="online-divider">或</div>
+                <input type="text" id="joinCodeInput" class="online-input" placeholder="输入6位房间号" maxlength="6" autocomplete="off">
+                <button class="online-btn" onclick="joinOnlineRoom()">加入</button>
+            </div>
+            <div class="online-msg" id="onlineMsg"></div>
+        </div>
+        <div id="onlineGameUI" class="online-game-ui" style="display:none">
+            <div class="online-game-header">
+                <span id="onlineRoomCode">房间: ------</span>
+                <span>👤 你: <span id="onlineMyScore">0</span></span>
+                <span>👤 对手: <span id="onlineOppScore">0</span></span>
+                <button class="online-quit-btn" onclick="quitOnlineRoom()">退出</button>
+            </div>
+            <div class="online-game-body">
+                <div class="online-word" id="onlineWord"></div>
+                <div class="online-options" id="onlineOptions"></div>
+                <div class="online-game-msg" id="onlineGameMsg">等待对手加入...</div>
+            </div>
+        </div>
+    </div>
+    <div class="not-found" id="notFound">⚠️ 未找到该单词</div>
+    <div class="controls">
+        <button onclick="prevWord()">上张</button>
+        <button onclick="nextWord()">下张</button>
+        <button class="random-btn" onclick="randomWord()">随机</button>
+        <button class="hint-btn" id="hintBtn" onclick="showHint()" style="display:none">提示</button>
+        <button class="filter-btn" id="filterBtn" onclick="toggleFilter()">收藏</button>
+        <button class="list-btn" id="listBtn" onclick="toggleWordList()">列表</button>
+        <button class="auto-btn" id="autoBtn" onclick="toggleAutoPlay()">自动</button>
+        <button class="speed-btn" id="speedBtn" onclick="cycleSpeed()">倍速 1x</button>
+    </div>
+    <div class="progress" id="progressIndicator">第 1 张 / 共 3673 张</div>
+    <div class="word-list-overlay" id="wordListOverlay">
+        <div class="word-list-header">
+            <span id="wordListTitle">单词列表</span>
+            <button onclick="toggleWordList()" title="关闭">✕</button>
+        </div>
+        <div class="word-list-scroll" id="wordListScroll"></div>
+    </div>
+    <div class="level-bar">
+        <button class="level-btn active" id="levelPrimary" onclick="switchLevel('primary')">小学</button>
+        <button class="level-btn" id="levelMiddle" onclick="switchLevel('middle')">初中</button>
+        <button class="level-btn" id="levelHigh" onclick="switchLevel('high')">高中</button>
+        <div class="textbook-wrap">
+            <button class="level-btn" id="textbookBtn" onclick="toggleTextbookMenu()">课本</button>
+            <div class="textbook-menu" id="textbookMenu"></div>
+        </div>
+        <button class="level-btn" id="levelCet4" onclick="switchLevel('cet4')">四级</button>
+        <button class="level-btn" id="levelCet6" onclick="switchLevel('cet6')">六级</button>
+        <button class="level-btn" id="levelKaoyan" onclick="switchLevel('kaoyan')">考研</button>
+        <button class="level-btn" id="levelIelts" onclick="switchLevel('ielts')">雅思</button>
+        <button class="level-btn" id="levelToefl" onclick="switchLevel('toefl')">托福</button>
+        <button class="level-btn" id="levelSat" onclick="switchLevel('sat')">SAT</button>
+        <button class="level-btn" id="levelGre" onclick="switchLevel('gre')">GRE</button>
+    </div>
+</div>
+<script src="/js/vocab-basic.js"></script>
+<script src="/js/vocabulary.js"></script>
+</body>
+</html>

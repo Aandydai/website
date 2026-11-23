@@ -1,0 +1,11 @@
+{
+  "name": "Promise 英语词汇",
+  "short_name": "词汇",
+  "description": "英语词汇学习与练习",
+  "start_url": "/vocabulary.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#667eea"
+}

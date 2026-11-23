@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>登录 - promise</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="login-body">
+  <main class="login-main">
+    <div class="login-box">
+      <a href="/posts" class="site-title login-title">promise</a>
+      <form id="login-form">
+        <div class="login-field">
+          <label for="login-name">user</label>
+          <input type="text" id="login-name" autocomplete="username" required>
+        </div>
+        <div class="login-field">
+          <label for="login-password">password</label>
+          <input type="password" id="login-password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" id="login-btn">登录</button>
+        <div id="login-error" class="login-error"></div>
+      </form>
+      <a href="/posts" class="login-back">Posts</a>
+    </div>
+  </main>
+  <script src="/js/login.js"></script>
+</body>
+</html>

@@ -31,12 +31,13 @@
       left: 50%; top: 50%;
       transform: translate(-50%, -50%);
       min-width: 90%;
-      max-height: 80%;
+      max-width: 95vw;
+      max-height: 90vh;
       background-color: rgba(0, 0, 0, 0.3);
       border-radius: 1.5em;
       color: #fefefe;
-      overflow: auto;
-      padding: 2.5em 2em;
+      overflow: hidden;
+      padding: 0.3em 1em;
       text-align: center;
       transition: left 0.6s ease, top 0.6s ease, transform 0.6s ease,
                   width 0.6s ease, padding 0.6s ease, border-radius 0.6s ease;
@@ -127,7 +128,7 @@
       color: #fefefe;
       text-shadow: 0 1px 2px #333;
       cursor: pointer;
-      margin: 0 0 0.3em 0;
+      margin: 0 0 0.2em 0;
       letter-spacing: 0.02em;
       transition: color 0.2s;
       user-select: none;
@@ -137,7 +138,7 @@
     #header p {
       color: #fefefe;
       text-shadow: 0 1px 1px #333;
-      margin: 0 0 1.8em 0;
+      margin: 0 0 1.2em 0;
       font-size: 0.95rem;
       letter-spacing: 0.03em;
     }
@@ -145,9 +146,9 @@
     /* ====== Nav Links ====== */
     #nav-links p {
       background-color: rgba(0, 0, 0, 0.5);
-      padding: 0.35em 0.6em;
+      padding: 0.23em 0.4em;
       border-radius: 0.5em;
-      margin: 0.6em 0;
+      margin: 0.4em 0;
       transition: background 0.2s;
     }
     #nav-links p:hover { background-color: #fefefe; }
@@ -160,7 +161,7 @@
     }
 
     /* ====== Footer ====== */
-    #footer { margin-top: 1.8em; }
+    #footer { margin-top: 1.2em; }
     #footer p {
       color: #fefefe;
       text-shadow: 0 1px 1px #333;
@@ -176,6 +177,39 @@
     @media (min-width: 771px) {
       #container { min-width: 40%; max-width: 500px; }
     }
+    /* ====== Beian Bottom Bar ====== */
+    #beian-bar {
+      position: fixed;
+      bottom: 0; left: 0;
+      width: 100%;
+      height: 30px;
+      background: rgba(0, 0, 0, 0.12);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.2em;
+      z-index: 40;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      font-size: 0.75rem;
+      color: rgba(254, 254, 254, 0.7);
+      text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+      letter-spacing: 0.02em;
+    }
+    #beian-bar a {
+      color: rgba(254, 254, 254, 0.7);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    #beian-bar a:hover {
+      color: #fff;
+      text-decoration: underline;
+    }
+    #beian-bar .sep {
+      color: rgba(254, 254, 254, 0.35);
+    }
+
     @media (max-width: 640px) {
       #container { min-width: 90%; padding: 1.8em 1.2em; }
       #header h1 { font-size: 1.6rem; }
@@ -187,6 +221,11 @@
       body.folded-left .fold-btn.right { left: 48px; }
       body.folded-right .fold-btn.left  { right: 48px; }
       #fold-label { font-size: 18px; letter-spacing: 6px; }
+      #beian-bar {
+        height: 28px;
+        font-size: 0.65rem;
+        gap: 0.6em;
+      }
     }
   </style>
 </head>
@@ -204,6 +243,7 @@
     <div id="nav-links">
       <p><a href="/posts">posts</a></p>
       <p><a href="/categories">categories</a></p>
+      <p><a href="/vocabulary">vocabulary</a></p>
       <p><a href="/links">links</a></p>
       <p><a href="/about">about</a></p>
     </div>
@@ -212,6 +252,7 @@
     </div>
   </div>
 
+  <div id="beian-bar"></div>
   <script src="/js/home.js"></script>
 </body>
 </html>

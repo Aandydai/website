@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Speaking — promise</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+:root {
+  --bg:#fff; --bg2:#f8f9fa; --bg3:#e9ecef; --text:#1a1a2e; --text2:#495057; --text3:#868e96;
+  --accent:#e17055; --accent2:#fab1a0; --accent3:#ffe8e0; --ok:#00b894; --err:#d63031; --warn:#fdcb6e;
+  --blue:#0984e3; --shadow:0 1px 6px rgba(0,0,0,.05); --r:10px; --rs:6px;
+  --font:'Segoe UI',system-ui,-apple-system,'Microsoft YaHei',sans-serif; --t:.2s ease;
+}
+[data-theme="dark"] {
+  --bg:#1a1a2e; --bg2:#16213e; --bg3:#0f3460; --text:#eaeaea; --text2:#a0a0b0; --text3:#6c6c80;
+  --accent:#fab1a0; --accent2:#e17055; --accent3:#3d2018; --shadow:0 1px 6px rgba(0,0,0,.3);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;transition:background var(--t),color var(--t)}
+.header{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--bg3);flex-shrink:0;gap:8px}
+.home-link{text-decoration:none;font-size:12px;font-weight:600;color:var(--text2);padding:5px 10px;border-radius:var(--rs);transition:all var(--t);display:flex;align-items:center;gap:4px;border:1px solid var(--bg3);white-space:nowrap}
+.home-link:hover{color:var(--accent);border-color:var(--accent);background:var(--accent3)}
+.icon-btn{width:30px;height:30px;border-radius:50%;border:none;background:var(--bg3);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all var(--t);color:var(--text)}
+.icon-btn:hover{background:var(--accent3)}
+
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column;padding:8px 16px;gap:6px}
+
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0;font-size:12px}
+.toolbar .st{display:flex;align-items:baseline;gap:3px;font-weight:600}
+.toolbar .stv{color:var(--accent);font-size:15px;font-weight:800}
+.toolbar .stl{color:var(--text3);font-size:10px}
+.toolbar select{font-family:var(--font);font-size:11px;padding:4px 7px;border-radius:var(--rs);border:1px solid var(--bg3);background:var(--bg);color:var(--text);cursor:pointer}
+
+.mode-tabs{display:flex;gap:3px;flex-shrink:0;align-self:center}
+.mode-tab{padding:7px 14px;border:none;border-radius:var(--rs);cursor:pointer;font-size:12px;font-weight:600;background:var(--bg2);color:var(--text2);transition:all var(--t);font-family:var(--font);white-space:nowrap}
+.mode-tab.active{background:var(--accent);color:#fff}
+.mode-tab:hover:not(.active){color:var(--text)}
+
+.content{flex:1;overflow-y:auto;overflow-x:hidden;background:var(--bg2);border-radius:var(--r);padding:16px 20px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px;min-height:0}
+.content::-webkit-scrollbar{width:4px}
+.content::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
+
+.btn{padding:7px 14px;border:none;border-radius:var(--rs);cursor:pointer;font-size:12px;font-weight:600;transition:all var(--t);font-family:var(--font)}
+.btn-a{background:var(--accent);color:#fff}.btn-a:hover{filter:brightness(1.1)}
+.btn-o{background:transparent;border:2px solid var(--bg3);color:var(--text)}.btn-o:hover{border-color:var(--accent);color:var(--accent)}
+.btn-s{padding:5px 10px;font-size:11px}
+.btn-play{width:44px;height:44px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:18px;cursor:pointer;transition:all var(--t);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn-play:hover{transform:scale(1.08)}
+.btn-play.live{animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 var(--accent2)}50%{box-shadow:0 0 18px 3px var(--accent2)}}
+
+.rec-btn{width:56px;height:56px;border-radius:50%;border:4px solid var(--accent);background:var(--bg);cursor:pointer;font-size:24px;transition:all var(--t);color:var(--accent);flex-shrink:0}
+.rec-btn:hover{transform:scale(1.08)}
+.rec-btn.recording{background:var(--err);border-color:var(--err);color:#fff;animation:recPulse 1.2s infinite}
+@keyframes recPulse{0%,100%{box-shadow:0 0 0 0 rgba(214,48,49,.4)}50%{box-shadow:0 0 0 18px rgba(214,48,49,0)}}
+.rec-btn:disabled{opacity:.4;cursor:not-allowed}
+
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.center{justify-content:center}.grow{flex:1;min-width:0}
+
+/* Stage indicator */
+.stages{display:flex;justify-content:center;gap:24px;flex-shrink:0;padding:6px 0}
+.stage-dot{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:var(--text3);transition:all var(--t)}
+.stage-dot .dot{width:10px;height:10px;border-radius:50%;background:var(--bg3);transition:all var(--t)}
+.stage-dot.cur .dot{background:var(--accent);box-shadow:0 0 8px var(--accent);width:12px;height:12px}
+.stage-dot.done .dot{background:var(--ok)}
+.stage-dot.cur{color:var(--accent);font-weight:700}
+.stage-dot.done{color:var(--ok)}
+
+/* Sentence display */
+.sentence-box{text-align:center;padding:20px;background:var(--bg);border-radius:var(--r);flex-shrink:0;min-height:60px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px}
+.sentence-box .en{font-size:clamp(18px,2.5vw,28px);font-weight:600;line-height:1.6;letter-spacing:1px}
+.sentence-box .cn{font-size:14px;color:var(--text2)}
+.sentence-box.playing{border:2px solid var(--accent);animation:pulse 1.2s infinite}
+
+/* Word coloring result */
+.words-row{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;font-size:clamp(16px,2vw,22px);line-height:1.8}
+.words-row .w{padding:2px 6px;border-radius:4px;transition:all var(--t)}
+.words-row .w.g{background:#d4fceb;color:#007a5e}
+.words-row .w.y{background:#fff3cd;color:#856404}
+.words-row .w.r{background:#ffe0e0;color:#c0392b}
+.words-row .w.m{background:var(--bg3);color:var(--text3);text-decoration:line-through}
+
+/* Score cards */
+.score-cards{display:flex;gap:8px;flex-shrink:0}
+.score-card{flex:1;padding:12px;background:var(--bg);border-radius:var(--r);text-align:center}
+.score-card .sv{font-size:24px;font-weight:800}
+.score-card .sl{font-size:10px;color:var(--text3);margin-top:2px}
+
+.fb{font-size:12px;line-height:1.5;padding:10px;border-radius:var(--rs);display:none}
+.fb.show{display:block}.fb.g{background:#e6fff8;color:#007a5e}.fb.m{background:#fff9e6;color:#856404}.fb.b{background:#fff0ed;color:#c0392b}
+
+/* Free Talk */
+.chat-area{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px;margin-bottom:6px}
+.chat-b{padding:8px 12px;border-radius:var(--rs);font-size:12px;line-height:1.4;max-width:80%}
+.chat-b.ai{background:var(--accent3);color:var(--text);align-self:flex-start}
+.chat-b.usr{background:var(--accent);color:#fff;align-self:flex-end;text-align:right}
+.chat-b.sys{background:var(--bg3);color:var(--text3);align-self:center;font-size:11px}
+
+/* Pronunciation */
+.pw{font-size:40px;letter-spacing:5px;font-weight:700;text-align:center;padding:12px;background:var(--bg);border-radius:var(--r)}
+.wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:5px;max-height:150px;overflow-y:auto}
+.wchip{padding:7px 5px;background:var(--bg);border:2px solid var(--bg3);border-radius:var(--rs);text-align:center;cursor:pointer;font-size:11px;font-weight:600;transition:all var(--t);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wchip:hover{border-color:var(--accent)}.wchip.active{border-color:var(--accent);background:var(--accent3)}.wchip.ok{border-color:var(--ok);background:#e6fff8}
+
+.loading{display:inline-block;width:14px;height:14px;border:2px solid var(--bg3);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.qbar{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text3);flex-shrink:0}
+
+@media(max-width:600px){.main{padding:6px 10px;gap:4px}.content{padding:10px 12px}.sentence-box .en{font-size:16px}.words-row{font-size:14px}.rec-btn{width:48px;height:48px;font-size:20px}}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <a href="/posts" class="home-link">← Posts</a>
+  <div class="mode-tabs" id="modeTabs">
+    <button class="mode-tab active" data-mode="shadow">📖 Shadow Reading</button>
+    <a href="/textbook" class="mode-tab" style="text-decoration:none">📚 Shadow Textbook</a>
+  </div>
+  <button class="icon-btn" id="darkToggle" title="Toggle dark mode">🌓</button>
+</header>
+
+<main class="main">
+  <div class="toolbar" style="justify-content:space-between">
+    <div class="row">
+      <div class="st"><span class="stv" id="sTotal">0</span>&nbsp;<span class="stl">Pts</span></div>
+      <div class="st"><span class="stv" id="sStreak">0</span>&nbsp;<span class="stl">🔥Str</span></div>
+      <div class="st"><span class="stv" id="sRounds">0</span>&nbsp;<span class="stl">Rnds</span></div>
+      <span style="font-size:10px;color:var(--text3)" id="sQuota"></span>
+    </div>
+    <div class="row">
+      <select id="voiceSelect" style="font-size:11px;max-width:180px"></select>
+      <select id="topicSelect" style="font-size:11px">
+        <option value="random" selected>Random</option><option value="daily">Daily</option><option value="travel">Travel</option><option value="work">Work</option><option value="school">School</option><option value="tech">Tech</option><option value="culture">Culture</option>
+      </select>
+      <select id="levelSelect" style="font-size:11px">
+        <option value="easy">A1/A2</option><option value="medium" selected>B1/B2</option><option value="hard">C1/C2</option>
+      </select>
+    </div>
+  </div>
+  <div class="content" id="content"></div>
+</main>
+
+<script>
+// ==================== THEME ====================
+(function(){if(localStorage.getItem('theme')==='dark')document.documentElement.dataset.theme='dark'})();
+const dk=document.getElementById('darkToggle');dk.textContent=document.documentElement.dataset.theme==='dark'?'☀':'🌙';dk.addEventListener('click',function(){const n=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=n;localStorage.setItem('theme',n);this.textContent=n==='dark'?'☀':'🌙'});
+
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;function hasSTT(){return!!SR}
+
+// ==================== STATE ====================
+const S={
+  mode:'shadow',topic:'random',level:'medium',voice:null,
+  total:0,streak:0,rounds:0,scores:[],
+  // Shadow
+  stage:0,text:'',translation:'',audioUrl:'',recBlobUrl:'',recRawUrl:'',recTranscript:'',recWavBlob:null,recWPM:0,recDur:0,
+  // Quota
+  dailyCount:0,dailyDate:''
+};
+(function(){try{const j=JSON.parse(localStorage.getItem('sp3')||'{}');if(j.t)S.total=j.t;if(j.st)S.streak=j.st;if(j.r)S.rounds=j.r;if(j.sc)S.scores=j.sc.slice(-50);if(j.dc)S.dailyCount=j.dc;if(j.dd)S.dailyDate=j.dd}catch(e){}})();
+function sv(){try{localStorage.setItem('sp3',JSON.stringify({t:S.total,st:S.streak,r:S.rounds,sc:S.scores.slice(-50),dc:S.dailyCount,dd:S.dailyDate}))}catch(e){}}function ui(){
+  document.getElementById('sTotal').textContent=S.total;document.getElementById('sStreak').textContent=S.streak;document.getElementById('sRounds').textContent=S.rounds;
+  const now=new Date().toDateString();if(S.dailyDate!==now){S.dailyCount=0;S.dailyDate=now;sv()}
+  document.getElementById('sQuota').textContent='🎯 Today: '+S.dailyCount+'/20';
+}ui();
+
+// TTS — Chrome-friendly
+var _vc=[];
+(function loadV(){_vc=speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=function(){_vc=speechSynthesis.getVoices()}})();
+
+function getEnVoice(){
+  // Return best available English voice, or null (no English voice -> server TTS fallback)
+  if(S.voice)return S.voice;
+  var en=_vc.filter(function(v){return v.lang&&v.lang.startsWith('en')});
+  if(en.length)return en[0];
+  return null;
+}
+
+async function iv(){
+  // wait for voices if not loaded yet
+  if(!_vc.length){await new Promise(function(r){speechSynthesis.onvoiceschanged=function(){_vc=speechSynthesis.getVoices();r()}})}
+  var en=_vc.filter(function(v){return v.lang&&v.lang.startsWith('en')}),s=document.getElementById('voiceSelect');
+  s.innerHTML='';
+  if(!en.length){s.innerHTML='<option>Default English</option>';return}
+  en.sort(function(a,b){return a.name.localeCompare(b.name)});
+  en.forEach(function(v){var o=document.createElement('option');o.value=v.name;o.textContent=v.name.substring(0,35)+' ('+v.lang+')';s.appendChild(o)});
+  // Prefer Google US English
+  var best=en.find(function(v){return v.name.includes('Google US English')})||en[0];
+  S.voice=best;s.value=best.name;
+}
+iv();
+document.getElementById('voiceSelect').addEventListener('change',function(){
+  var found=_vc.find(function(v){return v.name===this.value});
+  if(found)S.voice=found;
+});
+document.getElementById('topicSelect').addEventListener('change',function(){S.topic=this.value});
+document.getElementById('levelSelect').addEventListener('change',function(){S.level=this.value});
+
+// Chrome needs a user-gesture-initiated speak to "unlock" speechSynthesis
+var _ttsUnlocked=false;
+function unlockTTS(){
+  if(_ttsUnlocked)return;_ttsUnlocked=true;
+  if(speechSynthesis.speaking||speechSynthesis.pending)return;
+  var u=new SpeechSynthesisUtterance(' ');
+  u.volume=0;speechSynthesis.speak(u);
+}
+
+var _ttsAudio=null;
+function serverSpeak(tx){return new Promise(function(r){if(_ttsAudio){try{_ttsAudio.pause()}catch(e){}}_ttsAudio=new Audio('/api/tts?text='+encodeURIComponent(tx));_ttsAudio.onended=r;_ttsAudio.onerror=r;_ttsAudio.play().catch(r)})}
+
+async function speak(tx,sp){
+  var v=getEnVoice();
+  if(!v)return serverSpeak(tx);
+  return new Promise(function(resolve){
+    var u=new SpeechSynthesisUtterance(tx);
+    u.voice=v;u.rate=sp||1;u.pitch=1;u.volume=1;
+    u.onend=resolve;u.onerror=function(){resolve()};
+    speechSynthesis.speak(u);
+  });
+}
+
+function dspk(tx,sp){
+  // Don't cancel — Chrome race condition causes "interrupted" on the new utterance
+  var v=getEnVoice();
+  if(!v){serverSpeak(tx);return}
+  var u=new SpeechSynthesisUtterance(tx);
+  u.voice=v;u.rate=sp||1;u.pitch=1;u.volume=1;
+  u.onstart=function(){console.log('🔊 playing')};
+  u.onend=function(){console.log('✅ done')};
+  u.onerror=function(e){if(e.error!=='interrupted')console.error('TTS:',e.error)};
+  speechSynthesis.speak(u);
+}
+
+// ==================== MODE SWITCHING ====================
+const C=document.getElementById('content');
+// Single mode — shadow reading only
+
+// ==================== SHADOW READING (3-STAGE) ====================
+const ST={daily:{e:[],m:[],h:[]},travel:{e:[],m:[],h:[]},work:{e:[],m:[],h:[]},school:{e:[],m:[],h:[]},tech:{e:[],m:[],h:[]},culture:{e:[],m:[],h:[]},random:{e:[],m:[],h:[]}};
+ST.daily.e=['Hello, how are you today?','I like to eat breakfast with my family.','The weather is very nice and sunny.','Can you help me find my book?','She goes to the store every Saturday.','I drink coffee every morning.','My mother cooks delicious food.','He reads a book before sleeping.'];
+ST.daily.m=['I usually go for a walk in the park after dinner, and sometimes I meet my neighbors there.','She has been learning to cook Italian food, and her homemade pasta is absolutely delicious.','We decided to stay home because it was raining heavily, and we ended up watching a great movie.','I think it is important to exercise regularly, but I often struggle to find the motivation.'];
+ST.daily.h=['Notwithstanding the inclement weather, we resolved to proceed with our meticulously planned outdoor excursion.','Her penchant for hoarding vintage memorabilia has become somewhat of an obsession among her acquaintances.','The sheer audacity with which she dismissed our legitimate concerns was nothing short of astonishing.'];
+ST.travel.e=['Where is the nearest bus station?','I want to buy a ticket to London.','The museum is very beautiful.','We took many photos at the beach.','The hotel room is very comfortable.'];
+ST.travel.m=['We missed our connecting flight because the first plane was delayed by almost two hours.','The tour guide explained the fascinating history of the ancient temple in great detail.','I would definitely recommend visiting the local market rather than the tourist shops.'];
+ST.travel.h=['The juxtaposition of ancient architecture against the backdrop of gleaming skyscrapers was mesmerizing.','Contrary to the ubiquitous tourist brochures, the authentic charm lies in the less frequented alleyways.'];
+ST.work.e=['I have an important meeting at ten.','Please send me the report by email.','She works in a big office downtown.','My boss is very kind and supportive.','We finished the project early this week.'];
+ST.work.m=['The quarterly report indicates that our revenue has increased by approximately fifteen percent.','She was not entirely satisfied with how the presentation turned out.','We need to reconsider our marketing strategy before the competition catches up.'];
+ST.work.h=['The board unanimously endorsed the restructuring proposal, catching many analysts off guard.','Navigating the intricate regulatory landscape requires considerable expertise and diplomatic finesse.'];
+ST.school.e=['My favorite subject is science class.','We have math homework every day.','The teacher is very patient and kind.','I need to study for the test tomorrow.','She reads many books in the library.'];
+ST.school.m=['The professor emphasized that regular attendance would significantly affect the final grade.','She struggled with calculus until she started attending the weekly tutoring sessions.','The research paper must be submitted no later than the fifteenth of December.'];
+ST.school.h=['The epistemological underpinnings of this theoretical framework have been vigorously contested.','Her dissertation meticulously deconstructs the prevailing assumptions that have long dominated the discipline.'];
+ST.tech.e=['I use my phone to send messages.','The computer is very fast and new.','She downloaded a useful app yesterday.','We search for answers on the internet.','Please save the file to your desktop.'];
+ST.tech.m=['The software update includes several critical security patches and performance improvements.','She has been experimenting with artificial intelligence tools to streamline her daily workflow.','Remote work has become increasingly common in the technology sector over the past few years.'];
+ST.tech.h=['The exponential proliferation of machine learning algorithms has fundamentally transformed the landscape.','Algorithmic bias represents a pernicious and often overlooked threat to equitable deployment.'];
+ST.culture.e=['This song is very popular now.','She likes to paint beautiful pictures.','The movie was funny and exciting.','He plays the guitar really well.','The museum has old paintings.'];
+ST.culture.m=['The exhibition features remarkable works by emerging artists from around the world.','Folk music has experienced a surprising and widespread revival among younger generations.','The film received widespread critical acclaim but performed poorly at the box office.'];
+ST.culture.h=['The chiaroscuro technique employed in this masterpiece exemplifies extraordinary mastery.','Avant-garde movements historically encounter vehement resistance before assimilation into the mainstream.'];
+for(const lv of['e','m','h'])for(const tp of['daily','travel','work','school','tech','culture'])ST.random[lv]=(ST.random[lv]||[]).concat(ST[tp][lv]||[]);
+
+function pickText(){const L=S.level==='easy'?'e':S.level==='medium'?'m':'h',p=ST[S.topic]?.[L]||ST.random[L]||ST.random.m||[];return p[Math.floor(Math.random()*p.length)]||'The quick brown fox jumps over the lazy dog.'}
+
+async function genText(){
+  // Generate fresh sentence via DeepSeek, fallback to static bank
+  var levelDesc=S.level==='easy'?'A1/A2 beginner':S.level==='medium'?'B1/B2 intermediate':'C1/C2 advanced';
+  try{
+    var r=await fetch('/api/deepseek/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:[
+        {role:'system',content:'Generate one English sentence for speaking practice. Topic: '+S.topic+'. Level: '+levelDesc+'. Return ONLY the sentence, nothing else. Make it natural and suitable for shadow reading practice.'}
+      ],temperature:1.2,max_tokens:120})
+    });
+    if(r.ok){
+      var d=await r.json();
+      var text=(d.choices?.[0]?.message?.content||'').trim();
+      // Clean up: remove quotes, take first line only
+      text=text.replace(/^["']|["']$/g,'').split('\n')[0].trim();
+      if(text.length>20&&text.length<300)return text;
+    }
+  }catch(e){console.error('genText error:',e)}
+  return pickText(); // fallback to static bank
+}
+
+async function loadShadow(){
+  S.stage=0;S.text='';S.translation='';S.recBlobUrl='';S.recRawUrl='';S.recTranscript='';S.recWavBlob=null;
+  S.text=await genText();
+  renderStage();
+}
+
+// Levenshtein
+function ld(a,b){const m=[];for(let i=0;i<=b.length;i++)m[i]=[i];for(let j=0;j<=a.length;j++)m[0][j]=j;for(let i=1;i<=b.length;i++)for(let j=1;j<=a.length;j++)m[i][j]=b.charAt(i-1)===a.charAt(j-1)?m[i-1][j-1]:Math.min(m[i-1][j-1]+1,m[i][j-1]+1,m[i-1][j]+1);return m[b.length][a.length]}
+
+// WAV encoding (listenly-style: 16kHz, mono, PCM 16-bit)
+async function encodeWAV(blob){
+  const buf=await blob.arrayBuffer();
+  const actx=new(window.AudioContext||window.webkitAudioContext);
+  const audioBuf=await actx.decodeAudioData(buf);
+  const ch=audioBuf.numberOfChannels,len=audioBuf.length,sr=audioBuf.sampleRate;
+  // Downmix to mono
+  const mono=new Float32Array(len);
+  for(let c=0;c<ch;c++){const d=audioBuf.getChannelData(c);for(let i=0;i<len;i++)mono[i]+=d[i]/ch}
+  // Resample to 16kHz
+  const targetSr=16000,ratio=sr/targetSr,outLen=Math.ceil(len/ratio);
+  const oac=new(window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,outLen,targetSr);
+  const src=oac.createBufferSource();const b=oac.createBuffer(1,len,sr);b.getChannelData(0).set(mono);src.buffer=b;src.connect(oac.destination);src.start();
+  const rendered=await oac.startRendering();const pcm=rendered.getChannelData(0);
+  // Encode WAV
+  const bl=44+pcm.length*2,buf2=new ArrayBuffer(bl),dv=new DataView(buf2);
+  function ws(o,s){for(let i=0;i<s.length;i++)dv.setUint8(o+i,s.charCodeAt(i))}
+  ws(0,'RIFF');dv.setUint32(4,bl-8,true);ws(8,'WAVE');ws(12,'fmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);dv.setUint32(24,targetSr,true);dv.setUint32(28,targetSr*2,true);dv.setUint16(32,2,true);dv.setUint16(34,16,true);ws(36,'data');dv.setUint32(40,pcm.length*2,true);
+  for(let i=0,o=44;i<pcm.length;i++,o+=2){const s=Math.max(-1,Math.min(1,pcm[i]));dv.setInt16(o,s<0?s*32768:s*32767,true)}
+  return new Blob([buf2],{type:'audio/wav'});
+}
+
+// Encode raw PCM (Float32 chunks) to a standard WAV — plays on every browser incl. Huawei built-in
+function encodePCMToWAV(chunks,sampleRate){
+  let len=0;for(let i=0;i<chunks.length;i++)len+=chunks[i].length;
+  const pcm=new Float32Array(len);let off=0;
+  for(let i=0;i<chunks.length;i++){pcm.set(chunks[i],off);off+=chunks[i].length}
+  const bl=44+pcm.length*2,buf=new ArrayBuffer(bl),dv=new DataView(buf);
+  function ws(o,s){for(let i=0;i<s.length;i++)dv.setUint8(o+i,s.charCodeAt(i))}
+  ws(0,'RIFF');dv.setUint32(4,bl-8,true);ws(8,'WAVE');ws(12,'fmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);dv.setUint32(24,sampleRate,true);dv.setUint32(28,sampleRate*2,true);dv.setUint16(32,2,true);dv.setUint16(34,16,true);ws(36,'data');dv.setUint32(40,pcm.length*2,true);
+  for(let i=0,o=44;i<pcm.length;i++,o+=2){const s=Math.max(-1,Math.min(1,pcm[i]));dv.setInt16(o,s<0?s*32768:s*32767,true)}
+  return new Blob([buf],{type:'audio/wav'});
+}
+
+// Recording — both MediaRecorder + STT run simultaneously
+let recMediaStream=null,recChunks=[],recMime='',recStartTime=0,recRecorder=null,recSTT=null,recSTTText='';
+let recAudioCtx=null,recPCMChunks=[],recPCMRate=44100,recSourceNode=null,recProcNode=null;
+
+async function startRec(){
+  console.log('🎤 startRec called');
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){alert('Recording not supported. Use Chrome/Edge.');return false}
+  try{recMediaStream=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){console.error('getUserMedia error:',e);alert('Microphone denied. Click the lock icon in address bar to allow.');return false}
+  console.log('✅ Got mic stream, tracks:',recMediaStream.getAudioTracks().length);
+
+  // Start MediaRecorder
+  var mimes=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/ogg'];
+  recMime=mimes.find(function(m){return MediaRecorder.isTypeSupported(m)})||'';
+  recChunks=[];recStartTime=Date.now();
+  recRecorder=new MediaRecorder(recMediaStream,recMime?{mimeType:recMime}:{});
+  recRecorder.ondataavailable=function(e){console.log('📦 chunk:',e.data.size,'bytes');if(e.data.size>0)recChunks.push(e.data)};
+  recRecorder.onerror=function(e){console.error('Recorder error:',e)};
+  recRecorder.start(100); // 100ms timeslice for regular data
+  console.log('⏺ Recording started, mime:',recMime||'default');
+
+  // WebAudio PCM capture — produces a universal playback WAV (works even where WebM/Opus can't play)
+  try{
+    recAudioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    recSourceNode=recAudioCtx.createMediaStreamSource(recMediaStream);
+    recProcNode=recAudioCtx.createScriptProcessor(4096,1,1);
+    recPCMRate=recAudioCtx.sampleRate;recPCMChunks=[];
+    recProcNode.onaudioprocess=function(ev){var d=ev.inputBuffer.getChannelData(0);if(d&&d.length)recPCMChunks.push(new Float32Array(d))};
+    var muted=recAudioCtx.createGain();muted.gain.value=0;
+    recSourceNode.connect(recProcNode);recProcNode.connect(muted);muted.connect(recAudioCtx.destination);
+    console.log('🎧 PCM capture started @'+recPCMRate+'Hz');
+  }catch(e){console.error('PCM capture init failed:',e);recAudioCtx=null}
+
+  // STT — try it, but don't fail if unavailable (blocked in China)
+  recSTTText='[STT unavailable in your region]';
+  if(hasSTT()){
+    try{
+      recSTT=new SR();recSTT.lang='en-US';recSTT.interimResults=true;recSTT.maxAlternatives=1;recSTT.continuous=true;
+      recSTT.onresult=function(e){var t='';for(var i=e.resultIndex;i<e.results.length;i++)t+=e.results[i][0].transcript;recSTTText=t;var el=document.getElementById('recStatus');if(el)el.textContent='🔴 Recording...'+(t?' Heard: '+t:'')};
+      recSTT.onerror=function(e){console.log('STT:',e.error);recSTTText=''};
+      recSTT.onend=function(){console.log('STT ended')};
+      recSTT.start();console.log('🎙 STT started');
+    }catch(e){console.log('STT not available:',e)}
+  }
+  return true;
+}
+
+function stopRec(){
+  return new Promise(function(resolve){
+    console.log('⏹ stopRec called');
+    if(!recRecorder){console.log('No recorder');resolve(null);return}
+    // Stop STT first
+    if(recSTT){try{recSTT.stop()}catch(e){}recSTT=null;console.log('STT stopped')}
+    recRecorder.onstop=async function(){
+      console.log('Recorder stopped, chunks:',recChunks.length);
+      if(recMediaStream){recMediaStream.getTracks().forEach(function(t){t.stop()});recMediaStream=null}
+      var dur=(Date.now()-recStartTime)/1000;
+      var transcript=(recSTTText||'').trim();
+      if(transcript==='[STT unavailable in your region]')transcript='';
+      console.log('Duration:',dur.toFixed(1)+'s, transcript:',transcript||'(empty)');
+      recSTTText='';
+      // Encode a universal playback WAV from raw PCM (plays on any browser incl. Huawei built-in)
+      var playbackUrl='';
+      if(recAudioCtx&&recPCMChunks.length){
+        try{var pb=encodePCMToWAV(recPCMChunks,recPCMRate);playbackUrl=URL.createObjectURL(pb);console.log('Playback WAV:',pb.size,'bytes @'+recPCMRate+'Hz')}catch(e){console.error('PCM WAV encode error:',e)}
+      }
+      if(recAudioCtx){try{recAudioCtx.close()}catch(e){}recAudioCtx=null;recPCMChunks=[]}
+      if(recChunks.length===0){console.log('No audio chunks!');resolve({dur:0,transcript:'',playbackUrl:playbackUrl||null});return}
+      try{
+        var blob=new Blob(recChunks,{type:recMime});
+        console.log('Blob size:',blob.size,'bytes, type:',recMime);
+        var rawUrl=URL.createObjectURL(blob);
+        var wav=await encodeWAV(blob);
+        console.log('WAV encoded:',wav.size,'bytes');
+        var url=URL.createObjectURL(wav);
+        recChunks=[];
+        resolve({url:url,dur:dur,blob:wav,transcript:transcript,rawUrl:rawUrl,playbackUrl:playbackUrl||rawUrl});
+      }catch(e){
+        console.error('WAV encode error:',e);
+        var rawBlob=new Blob(recChunks,{type:recMime});
+        var rawUrl=URL.createObjectURL(rawBlob);
+        recChunks=[];
+        resolve({url:rawUrl,dur:dur,transcript:transcript,playbackUrl:playbackUrl||rawUrl});
+      }
+    };
+    recRecorder.stop();
+  });
+}
+
+// ==================== SHADOW RENDER ====================
+function loadShadow(){S.stage=0;S.text=pickText();S.translation='';S.recBlobUrl='';S.recRawUrl='';S.recTranscript='';S.recWavBlob=null;renderStage()}
+
+async function getTranslation(tx){
+  try{const r=await fetch('/api/deepseek/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'system',content:'Translate this English sentence to simple Chinese. Return ONLY the Chinese translation, nothing else.'},{role:'user',content:tx}],temperature:.1,max_tokens:150})});if(r.ok){const d=await r.json();return(d.choices?.[0]?.message?.content||'').trim()}}catch(e){}return''}
+
+function renderStage(){
+  const st=S.stage;
+  const dots=[
+    {id:0,label:'盲听跟读',icon:'👂'},
+    {id:1,label:'对照文本',icon:'📖'},
+    {id:2,label:'AI评分',icon:'🎯'}
+  ];
+  const dotHTML=dots.map(function(d){let cls='';if(d.id<st)cls='done';else if(d.id===st)cls='cur';return'<div class="stage-dot '+cls+'"><span class="dot"></span><span>'+d.icon+' '+d.label+'</span></div>'}).join('');
+
+  let body='';
+  if(st===0){ // Blind shadowing
+    body='<div class="sentence-box playing" id="senBox">🔊 <span style="font-size:18px;font-weight:600">Listen carefully...</span><div style="font-size:12px;color:var(--text3);margin-top:4px">Imitate the rhythm and tone</div></div>'+
+    '<div class="row center" style="gap:12px"><button class="btn-play" id="playBtn" title="Play audio">▶</button><span style="font-size:11px;color:var(--text3)">Click ▶ to hear the sentence</span></div>'+
+    '<div class="row center" style="gap:12px;margin-top:4px"><button class="btn btn-o" id="revealBtn">👁 Show Text (Skip)</button><button class="btn btn-a" id="nextBtn" style="display:none">Next →</button></div>';
+  }else if(st===1){ // Text comparison
+    body='<div class="sentence-box"><div class="en">'+esc(S.text)+'</div><div class="cn" id="cnText">'+(S.translation?'🇨🇳 '+esc(S.translation):'<span style="color:var(--text3)">Translating...</span>')+'</div></div>'+
+    '<div class="row center" style="gap:12px"><button class="btn-play" id="playBtn">▶</button><span style="font-size:11px;color:var(--text3)">Listen again, then record yourself</span></div>'+
+    '<div class="row center" style="gap:12px"><button class="rec-btn" id="recBtn">🎤</button><span style="font-size:12px;color:var(--text2)" id="recStatus">Click 🎤 to record</span></div>'+
+    '<div class="fb" id="recFb"></div>'+
+    '<div class="row center" style="gap:8px"><button class="btn btn-o btn-s" id="skipBtn">Skip Recording</button><button class="btn btn-a btn-s" id="stage2next" style="display:none">Review →</button></div>';
+  }else{ // AI Review
+    body='<div class="sentence-box"><div class="en">'+esc(S.text)+'</div><div class="cn">'+(S.translation?'🇨🇳 '+esc(S.translation):'')+'</div></div>'+
+    '<div class="row center"><button class="btn-play" id="playBtn">▶ Original</button>'+(S.recBlobUrl?'<button class="btn btn-o btn-s" id="playRec">🔊 My Recording</button>':'')+'</div>'+
+    '<div class="score-cards" id="scoreCards"><div class="score-card"><div class="sv" style="color:var(--ok)" id="scAcc">—</div><div class="sl">Accuracy</div></div><div class="score-card"><div class="sv" style="color:var(--accent)" id="scFlu">—</div><div class="sl">Fluency</div></div><div class="score-card"><div class="sv" style="color:var(--blue)" id="scCom">—</div><div class="sl">Completeness</div></div></div>'+
+    '<div id="wordColor" class="words-row" style="min-height:30px"></div>'+
+    '<div class="fb" id="reviewFb"></div>'+
+    '<div id="aiFb" style="font-size:12px;line-height:1.5;padding:8px;background:var(--bg);border-radius:var(--rs)"></div>'+
+    '<div class="row center"><button class="btn btn-a" id="againBtn">Next Sentence →</button></div>';
+  }
+
+  C.innerHTML='<div class="stages">'+dotHTML+'</div>'+body;
+
+  // Stage 0 handlers
+  if(st===0){
+    const senBox=document.getElementById('senBox');
+    document.getElementById('playBtn').addEventListener('click',function(){senBox.className='sentence-box playing';senBox.innerHTML='🔊 <span style="font-size:18px;font-weight:600">Playing...</span><div style="font-size:12px;color:var(--text3)">Listen and shadow the rhythm</div>';dspk(S.text);setTimeout(function(){senBox.className='sentence-box';senBox.innerHTML='✅ <span style="font-size:18px;font-weight:600">Well done!</span><div style="font-size:12px;color:var(--text3);margin-top:4px">Ready for the next step?</div>';var nb=document.getElementById('nextBtn');if(nb)nb.style.display=''},S.text.split(' ').length*350+800)});
+    document.getElementById('revealBtn').addEventListener('click',async function(){if(!S.translation)S.translation=await getTranslation(S.text)||'(translation unavailable)';S.stage=1;renderStage()});
+    document.getElementById('nextBtn').addEventListener('click',async function(){if(!S.translation)S.translation=await getTranslation(S.text)||'(translation unavailable)';S.stage=1;renderStage()});
+  }
+  // Stage 1 handlers
+  if(st===1){
+    document.getElementById('playBtn').addEventListener('click',function(){dspk(S.text)});
+    document.getElementById('skipBtn').addEventListener('click',function(){S.stage=2;renderStage()});
+    document.getElementById('recBtn').addEventListener('click',async function(){
+      const btn=this,status=document.getElementById('recStatus');
+      if(recRecorder&&recRecorder.state==='recording'){
+        btn.disabled=true;status.textContent='Processing...';
+        const result=await stopRec();
+        if(result){
+          S.recBlobUrl=result.url||'';
+          S.recRawUrl=result.playbackUrl||result.rawUrl||result.url||'';
+          S.recDur=result.dur||0;
+          S.recTranscript=result.transcript||'';
+          S.recWavBlob=result.blob||null;
+          S.stage=2;renderStage();
+        }else{status.textContent='Recording failed. Try again.';btn.disabled=false}
+        return;
+      }
+      const ok=await startRec();if(!ok){status.textContent='Could not start recording.';return}
+      btn.classList.add('recording');btn.textContent='⏹';status.textContent='🔴 Recording... Click ⏹ to stop';
+    });
+    // Auto-translate on stage 1 load
+    (async function(){if(!S.translation){S.translation=await getTranslation(S.text)||'';const cn=document.getElementById('cnText');if(cn)cn.textContent=S.translation?'🇨🇳 '+S.translation:'🇨🇳 (translation unavailable)'}})();
+  }
+  // Stage 2 handlers
+  if(st===2){
+    document.getElementById('playBtn').addEventListener('click',function(){dspk(S.text)});
+    if(S.recBlobUrl){document.getElementById('playRec').addEventListener('click',function(){playAudio(S.recRawUrl||S.recBlobUrl,S.recBlobUrl)})}
+function playAudio(url,fallback){
+  var a=document.createElement('audio');a.src=url;a.style.display='none';document.body.appendChild(a);
+  a.onended=function(){document.body.removeChild(a)};
+  a.onerror=function(e){
+    console.error('Audio error:',e);document.body.removeChild(a);
+    if(fallback&&fallback!==url){console.log('Trying WAV fallback...');playAudio(fallback)}
+  };
+  a.play().catch(function(e){
+    console.error('Play rejected:',e);document.body.removeChild(a);
+    if(fallback&&fallback!==url){playAudio(fallback)}
+  });
+}
+    document.getElementById('againBtn').addEventListener('click',function(){loadShadow()});
+    // Run evaluation
+    runEval();
+  }
+}
+
+// ==================== EVALUATION ====================
+async function runEval(){
+  if(!S.recBlobUrl){document.getElementById('scAcc').textContent='—';document.getElementById('scFlu').textContent='—';document.getElementById('scCom').textContent='—';document.getElementById('reviewFb').className='fb m show';document.getElementById('reviewFb').innerHTML='⚠️ No recording available. Record yourself in the previous step!';return}
+  S.dailyCount++;S.rounds++;ui();sv();
+
+  // STT: try live (Google) first, then Baidu API
+  var transcript=S.recTranscript||'';
+  if(!transcript&&S.recWavBlob){
+    document.getElementById('reviewFb').className='fb show m';
+    document.getElementById('reviewFb').innerHTML='<span class="loading"></span> Calling Baidu STT to transcribe your recording...';
+    try{
+      var reader=new FileReader();
+      var base64=await new Promise(function(resolve){reader.onload=function(){resolve(reader.result.split(',')[1])};reader.readAsDataURL(S.recWavBlob)});
+      var r=await fetch('/api/stt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({audio:base64})});
+      var d=await r.json();
+      if(d.success&&d.text){transcript=d.text;S.recTranscript=transcript;console.log('Baidu STT:',transcript)}
+    }catch(e){console.error('Baidu STT error:',e)}
+  }
+  var hasTranscript=transcript&&transcript.length>0;
+  var tw=S.text.toLowerCase().replace(/[^a-z0-9\s]/g,'').split(/\s+/).filter(Boolean);
+
+  if(hasTranscript){
+    // STT worked — full automated scoring
+    var sw=transcript.toLowerCase().replace(/[^a-z0-9\s]/g,'').split(/\s+/).filter(Boolean);
+    var correctWords=0;for(var i=0;i<tw.length;i++){if(i<sw.length&&sw[i]===tw[i])correctWords++;else if(i<sw.length&&ld(sw[i],tw[i])<=2)correctWords+=0.5}
+    var acc=tw.length?Math.round(correctWords/tw.length*100):0;
+    var wpm=S.recDur>0?Math.round(sw.length/(S.recDur/60)):0;
+    var flu=Math.min(100,Math.round(wpm/1.5));
+    var comp=tw.length?Math.min(100,Math.round(sw.length/tw.length*100)):0;
+    document.getElementById('scAcc').textContent=acc+'%';document.getElementById('scAcc').style.color=acc>=80?'var(--ok)':acc>=60?'var(--warn)':'var(--err)';
+    document.getElementById('scFlu').textContent=flu+'%';document.getElementById('scCom').textContent=comp+'%';
+    // Word coloring
+    var wc=document.getElementById('wordColor');var wh='';
+    for(var i=0;i<tw.length;i++){var twi=tw[i];var cls='w';if(i<sw.length){if(sw[i]===twi)cls+=' g';else if(ld(sw[i],twi)<=2)cls+=' y';else cls+=' r'}else cls+=' r';wh+='<span class="'+cls+'">'+esc(S.text.split(/\s+/)[i]||twi)+'</span> '}
+    wc.innerHTML=wh;
+    var ovr=Math.round(acc*.4+flu*.3+comp*.3);S.scores.push(ovr);
+    if(ovr>=70){S.total+=Math.round(ovr/10);S.streak++}else S.streak=0;
+    var fb=document.getElementById('reviewFb');fb.className='fb show '+(ovr>=80?'g':ovr>=60?'m':'b');
+    fb.innerHTML='<b>Overall:</b> '+ovr+'% | <b>Accuracy:</b> '+acc+'% | <b>Fluency:</b> '+flu+'% | <b>Completeness:</b> '+comp+'%<br><b>You said:</b> <em>"'+esc(transcript)+'"</em>';
+    getAIFb().then(function(t){if(t)document.getElementById('aiFb').innerHTML='<b>🤖 AI Feedback:</b><br>'+t});
+  } else {
+    // No STT — show manual self-assessment
+    document.getElementById('scAcc').textContent='—';document.getElementById('scFlu').textContent='—';document.getElementById('scCom').textContent='—';
+    var wc=document.getElementById('wordColor');var twDisplay=S.text.split(/\s+/);wc.innerHTML=twDisplay.map(function(w,i){return'<span class="w" data-wi="'+i+'" style="cursor:pointer;padding:3px 6px;border-radius:4px;transition:all .2s" title="Click: right=✔ green, wrong=✘ red, again to undo">'+esc(w)+'</span>'}).join(' ');
+    // Click-to-self-assess
+    wc.querySelectorAll('.w').forEach(function(span){var state=0;span.addEventListener('click',function(){state=(state+1)%3;span.classList.remove('g','r');if(state===1)span.classList.add('g');if(state===2)span.classList.add('r')})});
+    var fb=document.getElementById('reviewFb');fb.className='fb show m';
+    fb.innerHTML='⚠️ <b>Speech recognition unavailable.</b> (Google STT blocked, Baidu STT failed)<br>👉 <b>Self-assess:</b> Click each word — <span style="color:var(--ok)">green</span> = you said it right, <span style="color:var(--err)">red</span> = you missed it.';
+    document.getElementById('aiFb').innerHTML='<span style="color:var(--text3)">Play your recording 🔊 and compare with the original ▶. Listen for pronunciation, rhythm, and stress.</span>';
+  }
+  ui();sv();
+}
+
+async function getAIFb(){
+  try{const r=await fetch('/api/deepseek/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'system',content:'Short (2-3 sentences) encouraging English speaking feedback. Mention: 1) one strength in their pronunciation, 2) one specific word or phrase they could improve. Be warm and constructive.'},{role:'user',content:'Target: "'+S.text+'"\nUser said: "'+S.recTranscript+'"\nWPM: '+S.recWPM+'\nLevel: '+S.level}],temperature:.7,max_tokens:200})});if(r.ok){const d=await r.json();return(d.choices?.[0]?.message?.content||'').trim()}}catch(e){}return''}
+
+// ==================== INIT ====================
+loadShadow();
+</script>
+</body>
+</html>

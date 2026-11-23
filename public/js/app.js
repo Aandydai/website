@@ -12,35 +12,45 @@ async function loadPosts(page = 1) {
     if (!data.posts || data.posts.length === 0) {
       listEl.innerHTML = '<p style="text-align:center;color:#999;padding:40px 0;">No posts yet.</p>';
       renderPagination(data.page || page, data.totalPages || 1);
+      window.scrollTo(0, 0);
       return;
     }
 
     for (const post of data.posts) {
       const item = document.createElement('div');
-      item.className = 'post-item';
+      item.className = 'post-item reveal';
 
+      const preview = escapeHtml((post.content_preview || '').replace(/\s+/g, ' ').trim());
+      const previewHtml = preview ? '；<span class="post-preview">' + preview + '</span>' : '';
       if (post.hasPassword) {
         item.innerHTML = `
-          <h2 class="post-title"><a href="/post/${post.slug}" target="_blank">${post.title}</a></h2>
-          <div class="post-meta">
-            Category: <a href="#">${post.category}</a> &nbsp;&middot;&nbsp; ${post.created_at}
-          </div>
-          <div class="post-protected">&#128274; Password protected</div>
+          <p class="post-text">
+            <a class="post-title" href="/post/${post.slug}" target="_blank">${post.title}</a><span class="post-detail">；
+            <span class="post-meta">Category: <a href="#">${post.category}</a> &nbsp;&middot;&nbsp; ${post.created_at}</span>；
+            <span class="post-protected">&#128274; Password protected</span></span>
+          </p>
         `;
       } else {
         item.innerHTML = `
-          <h2 class="post-title"><a href="/post/${post.slug}" target="_blank">${post.title}</a></h2>
-          <div class="post-meta">
-            Category: <a href="#">${post.category}</a> &nbsp;&middot;&nbsp; ${post.created_at} &nbsp;&middot;&nbsp; <a href="/post/${post.slug}#comments">${post.comment_count || 0} comments</a>
-          </div>
-          <div class="post-preview">${escapeHtml(post.content_preview || post.content)}</div>
+          <p class="post-text">
+            <a class="post-title" href="/post/${post.slug}" target="_blank">${post.title}</a><span class="post-detail">；
+            <span class="post-meta">Category: <a href="#">${post.category}</a> &nbsp;&middot;&nbsp; ${post.created_at} &nbsp;&middot;&nbsp; <a href="/post/${post.slug}#comments">${post.comment_count || 0} comments</a></span>${previewHtml}</span>
+          </p>
         `;
       }
+
+      item.addEventListener('click', function(e) {
+        if (e.target.closest('a')) return;
+        window.open('/post/' + post.slug, '_blank');
+      });
 
       listEl.appendChild(item);
     }
 
+    if (window.revealObserve) window.revealObserve();
+
     renderPagination(data.page, data.totalPages);
+    window.scrollTo(0, 0);
   } catch (err) {
     console.error('loadPosts error:', err);
     const listEl = document.getElementById('post-list');
@@ -301,6 +311,12 @@ async function loadCategories() {
     card.addEventListener('click', function() { loadCategoryPosts(c.name); });
     listEl.appendChild(card);
   }
+
+  // Add Vocabulary card after categories (display only, nav bar handles navigation)
+  var vocabCard = document.createElement('div');
+  vocabCard.className = 'friend-card';
+  vocabCard.innerHTML = '<h3>Vocabulary</h3><p>英语考试大纲3500词</p>';
+  listEl.appendChild(vocabCard);
 }
 
 async function loadCategoryPosts(categoryName) {
@@ -451,9 +467,34 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.className = 'nav-icon';
     btn.textContent = document.documentElement.dataset.theme === 'dark' ? '☀' : '☾';
     btn.title = 'Toggle dark mode';
-    btn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:14px;padding:0;color:var(--accent)';
+    btn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:1em;padding:0;color:var(--accent)';
     btn.addEventListener('click', toggleTheme);
     navRight.appendChild(btn);
+
+    // 登录入口（主题切换右边）
+    var loginEl = document.createElement('a');
+    loginEl.id = 'login-entry';
+    loginEl.href = '/login';
+    loginEl.textContent = 'login';
+    loginEl.style.cssText = 'text-decoration:none;color:var(--accent);font-size:1em;';
+    navRight.appendChild(loginEl);
+
+    fetch('/api/user/me')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.loggedIn) {
+          loginEl.textContent = '👤 ' + data.name;
+          loginEl.href = '#';
+          loginEl.title = '退出登录';
+          loginEl.addEventListener('click', function(e) {
+            e.preventDefault();
+            fetch('/api/user/logout', { method: 'POST' }).then(function() {
+              window.location.reload();
+            });
+          });
+        }
+      })
+      .catch(function() {});
   }
 
   const path = window.location.pathname;
